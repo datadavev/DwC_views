@@ -1,6 +1,8 @@
 REST API Exposed by the Gateway
 ===============================
 
+.. module:: gateway
+
 .. list-table::
    :header-rows: 1
 
@@ -49,11 +51,32 @@ REST API Exposed by the Gateway
    Returns a page of records.
 
    :URL: {base}/records
+   :param start:
+   :type start: integer
+   :param count:
+   :type count: integer
+   :param orderby:
+   :type orderby: OrderByEnum
+   :param fields: 
+   :type fields: FieldList
+   :param filter:
+   :type filter: Filter
    :rtype:
    :returns:
 
    Example::
 
     curl http://service/base/records?start=0&count=10
+
+
+
+.. class:: FieldList
+
+   A list of field names.
+
+
+.. class:: Filter
+
+   A filter for specifying a subset of records.
 
 
