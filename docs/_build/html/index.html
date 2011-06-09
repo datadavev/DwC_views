@@ -33,6 +33,9 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
           <a href="gateway_api.html" title="REST API Exposed by the Gateway"
              accesskey="N">next</a> |</li>
         <li><a href="#">DwC Views v0.1.0 documentation</a> &raquo;</li> 
@@ -46,20 +49,56 @@
             
   <div class="section" id="dwc-views">
 <h1>DwC Views<a class="headerlink" href="#dwc-views" title="Permalink to this headline">¶</a></h1>
-<p>Contents:</p>
+<p>DwC_Views provides implementation of viewers for <a class="reference external" href="http://rs.tdwg.org/dwc/">Darwin Core</a> records. The
+implementation is structured as two major components: the gateway, and the
+browser.</p>
+<p>The gateway is a <a class="reference external" href="https://www.djangoproject.com/">Django</a> application that acts as a proxy and cache for
+resources that expose Darwin Core records. It supports a simple service
+interface for retrieving records and exposes them as JSON objects that can be
+rendered by JavaScript in the web browser. The API is described under <em>/docs</em>.</p>
+<p>The browser is a set of JavaScript and HTML that enables viewing of record
+lists and individual records, as well as other metadata retrieved from the
+gateway.</p>
+<p><strong>Contents:</strong></p>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="gateway_api.html">REST API Exposed by the Gateway</a></li>
 </ul>
 </div>
+<div class="section" id="license">
+<h2>License<a class="headerlink" href="#license" title="Permalink to this headline">¶</a></h2>
+<p>This work was created by participants in projects sponsored by the National
+Science Foundation (<a class="reference external" href="http://nsf.gov/awardsearch/showAward.do?AwardNumber=0415600">NSF-DBI-0415600</a>, <a class="reference external" href="http://nsf.gov/awardsearch/showAward.do?AwardNumber=0955076">NSF-DBI-0955076</a>) and is copyrighted
+by The University of Kansas. For more information on DataONE, see our web site
+at <a class="reference external" href="http://naturalhistory.ku.edu/">http://naturalhistory.ku.edu/</a>.</p>
+<blockquote>
+<div>Copyright 2011, University of Kansas</div></blockquote>
+<p>Licensed under the Apache License, Version 2.0 (the &#8220;License&#8221;); you may not
+use this file except in compliance with the License. You may obtain a copy of
+the License at</p>
+<blockquote>
+<div><a class="reference external" href="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</a></div></blockquote>
+<p>Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an &#8220;AS IS&#8221; BASIS, WITHOUT
+WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+License for the specific language governing permissions and limitations under
+the License.</p>
+</div>
+<div class="section" id="citation">
+<h2>Citation<a class="headerlink" href="#citation" title="Permalink to this headline">¶</a></h2>
+<p>The following citation should be used when referencing this work:</p>
+<blockquote>
+<div>Darwin Core Views (2011). [<a class="reference external" href="https://github.com/vdave/DwC_views">https://github.com/vdave/DwC_views</a>] Supported by
+US National Science Foundation Grants 0955076 and 0415600.</div></blockquote>
 </div>
 <div class="section" id="indices-and-tables">
-<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
 <li><a class="reference internal" href="genindex.html"><em>Index</em></a></li>
 <li><a class="reference internal" href="py-modindex.html"><em>Module Index</em></a></li>
 <li><a class="reference internal" href="search.html"><em>Search Page</em></a></li>
 </ul>
+</div>
 </div>
 
 
@@ -71,9 +110,11 @@
   <h3><a href="#">Table Of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">DwC Views</a><ul>
+<li><a class="reference internal" href="#license">License</a></li>
+<li><a class="reference internal" href="#citation">Citation</a></li>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
 </ul>
 
   <h4>Next topic</h4>
@@ -107,6 +148,9 @@
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="right" >
           <a href="gateway_api.html" title="REST API Exposed by the Gateway"
              >next</a> |</li>

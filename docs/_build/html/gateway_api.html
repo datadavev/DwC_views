@@ -33,6 +33,9 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
           <a href="index.html" title="DwC Views"
              accesskey="P">previous</a> |</li>
         <li><a href="index.html">DwC Views v0.1.0 documentation</a> &raquo;</li> 
@@ -44,8 +47,8 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="rest-api-exposed-by-the-gateway">
-<h1>REST API Exposed by the Gateway<a class="headerlink" href="#rest-api-exposed-by-the-gateway" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="module-gateway">
+<span id="rest-api-exposed-by-the-gateway"></span><h1>REST API Exposed by the Gateway<a class="headerlink" href="#module-gateway" title="Permalink to this headline">¶</a></h1>
 <table border="1" class="docutils">
 <colgroup>
 <col width="20%" />
@@ -84,8 +87,8 @@
 </tbody>
 </table>
 <dl class="function">
-<dt id="getSummary">
-<tt class="descname">getSummary</tt><big>(</big><big>)</big><a class="headerlink" href="#getSummary" title="Permalink to this definition">¶</a></dt>
+<dt id="gateway.getSummary">
+<tt class="descclassname">gateway.</tt><tt class="descname">getSummary</tt><big>(</big><big>)</big><a class="headerlink" href="#gateway.getSummary" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a summary of the collection held at this location.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -102,8 +105,8 @@
 </dd></dl>
 
 <dl class="function">
-<dt id="getFields">
-<tt class="descname">getFields</tt><big>(</big><big>)</big><a class="headerlink" href="#getFields" title="Permalink to this definition">¶</a></dt>
+<dt id="gateway.getFields">
+<tt class="descclassname">gateway.</tt><tt class="descname">getFields</tt><big>(</big><big>)</big><a class="headerlink" href="#gateway.getFields" title="Permalink to this definition">¶</a></dt>
 <dd><blockquote>
 <div>Returns a list of fields available in records in this collections</div></blockquote>
 <table class="docutils field-list" frame="void" rules="none">
@@ -121,24 +124,48 @@
 </dd></dl>
 
 <dl class="function">
-<dt id="getRecords">
-<tt class="descname">getRecords</tt><big>(</big><big>)</big><a class="headerlink" href="#getRecords" title="Permalink to this definition">¶</a></dt>
+<dt id="gateway.getRecords">
+<tt class="descclassname">gateway.</tt><tt class="descname">getRecords</tt><big>(</big><big>)</big><a class="headerlink" href="#gateway.getRecords" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a page of records.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Url :</th><td class="field-body">{base}/records</td>
+<tr class="field"><th class="field-name">Url :</th><td class="field-body"><p class="first">{base}/records</p>
+</td>
 </tr>
-<tr class="field"><th class="field-name">Return type:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>start</strong> (<em>integer</em>) &#8211; </li>
+<li><strong>count</strong> (<em>integer</em>) &#8211; </li>
+<li><strong>orderby</strong> (<em>OrderByEnum</em>) &#8211; </li>
+<li><strong>fields</strong> (<em>FieldList</em>) &#8211; </li>
+<li><strong>filter</strong> (<em>Filter</em>) &#8211; </li>
+</ul>
+</td>
 </tr>
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first"></p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+</td>
 </tr>
 </tbody>
 </table>
 <p>Example:</p>
 <div class="highlight-python"><pre>curl http://service/base/records?start=0&amp;count=10</pre>
 </div>
+</dd></dl>
+
+<dl class="class">
+<dt id="gateway.FieldList">
+<em class="property">class </em><tt class="descclassname">gateway.</tt><tt class="descname">FieldList</tt><a class="headerlink" href="#gateway.FieldList" title="Permalink to this definition">¶</a></dt>
+<dd><p>A list of field names.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="gateway.Filter">
+<em class="property">class </em><tt class="descclassname">gateway.</tt><tt class="descname">Filter</tt><a class="headerlink" href="#gateway.Filter" title="Permalink to this definition">¶</a></dt>
+<dd><p>A filter for specifying a subset of records.</p>
 </dd></dl>
 
 </div>
@@ -180,6 +207,9 @@
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="right" >
           <a href="index.html" title="DwC Views"
              >previous</a> |</li>
