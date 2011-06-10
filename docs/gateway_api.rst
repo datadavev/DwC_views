@@ -33,8 +33,8 @@ REST API Exposed by the Gateway
    Returns a summary of the collection held at this location.
 
    :URL: {base}/
-   :rtype:
-   :returns:
+   :rtype: CollectionSummary
+   :returns: A summary of the collection
 
 
 .. function:: getFields()
@@ -68,6 +68,10 @@ REST API Exposed by the Gateway
 
     curl http://service/base/records?start=0&count=10
 
+
+.. class:: CollectionSummary
+
+   A summary of the collection.
 
 
 .. class:: FieldList

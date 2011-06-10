@@ -26,6 +26,7 @@ gateway.
    :maxdepth: 2
 
    gateway_api
+   interface_design
 
 
 
