@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+  <title>CoreyO.Net Google Apps Engine Sandbox</title>
+
+  {% block links %}
+  <link type="text/css" rel="stylesheet" href="/pcss/default.css">
+  {% endblock %}
+
+  {% block scripts %}
+  {% endblock %}
+
+</head>
+
+<body>
+
+<div id="PageContainer" class="PageContainer">
+
+  <div id="PageHeader" class="PageHeader">
+   {% block page_header %}
+   {% include "page_header.html" %} 
+   {% endblock %}
+  </div>
+
+  <div id="BodyContainer" class="BodyContainer">
+
+    <div id="TopMenu" class="TopMenu">
+     {% block top_menu %}
+     {% include "top_menu.html" %}
+     {% endblock %}
+    </div>
+
+    <div id="LeftMenu" class="LeftMenu">
+     {% block left_menu %}
+     {% include "left_menu.html" %}
+     {% endblock %}
+    </div>
+
+    <div id="MainContent" class="MainContent">
+     {% block main_content %}
+     {% include "main_content.html" %}
+     {% endblock %}
+    </div>
+
+    <div id="BottomMenu" class="BottomMenu">
+     {% block bottom_menu %}
+     {% include "bottom_menu.html" %}
+     {% endblock %}
+    </div>
+
+  </div>
+
+  <div id="PageFooter" class="PageFooter">
+   {% block page_footer %}
+   {% include "page_footer.html" %}
+   {% endblock %}
+  </div>
+
+</div>
+
+</body>
+
+</html>

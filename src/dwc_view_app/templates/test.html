@@ -1,0 +1,13 @@
+{% extends "index.html" %}
+
+{% block main_content %}
+
+{% for result in results %}
+<div style="border-width: 2px; border-style: solid; margin: 2px; padding: 2px;">
+  {{ result }}
+</div>
+{% empty %}
+  There Were No Results
+{% endfor %}
+
+{% endblock %}

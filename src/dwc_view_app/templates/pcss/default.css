@@ -1,0 +1,170 @@
+{% with 850 as page_width %}
+{% with 30 as horizontal_menu_height %}
+{% with 160 as vertical_menu_width %}
+{% with 6 as default_padding %}
+html, body
+{
+  font-family: verdana, arial, helvetica, sans-serif;
+  font-size: 13px;
+  line-height: 18px;
+  height: 100%;
+}
+
+/*
+ * alter padding behavior so that padding does not
+ * increase the size of the container but instead
+ * decreases the available space inside the container
+*/
+div, ul
+{
+  -moz-box-sizing: border-box;
+  -ms-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+}
+
+a { color: #000; }
+a:visited { color: #666; }
+a:hover { color: #fff; background-color:#000; }
+
+div.PageContainer
+{
+  position: absolute;
+  left: 0px;
+  top: 0px;
+  width: {{ page_width }}px;
+  padding: 2px;
+}
+
+div.PageHeader
+{
+  display: table;
+  background-color: green;
+  width: 100%;
+  text-align: left;
+  vertical-align: middle;
+  padding: {{ default_padding }}px;
+}
+
+div.BodyContainer
+{
+  background-color: grey;
+  float: left;
+  width: 100%;
+  min-height: 300px;
+  padding: {{ default_padding }}px;
+}
+
+div.TopMenu
+{
+  display: block;
+  text-align: center;
+  vertical-align: middle;
+  background-color: pink;
+  width: 100%;
+  height: {{ horizontal_menu_height }}px;
+  padding: {{ default_padding }}px;
+  margin: 0px 0px {{ default_padding }}px 0px;
+}
+
+div.LeftMenu
+{
+  display: block;
+  float: left;
+  background-color: yellow;
+  margin: 0px {{ default_padding }}px {{ default_padding }}px 0px;
+  width: {{ vertical_menu_width }}px;
+  padding: 8px {{ default_padding }}px 12px {{ default_padding }}px;
+}
+
+div.MainContent
+{
+  display: block;
+  background-color: blue;
+  margin: 0px 0px 0px {{ vertical_menu_width|add:default_padding }}px;
+  padding: {{ default_padding }}px;
+  width: auto;
+}
+
+/* don't allow floating elements to
+ * share the same horizontal space */
+#LeftMenu:after, #MainContent:after
+{
+  content: ".";
+  display: block;
+  height: 0;
+  clear: both;
+  visibility: hidden;
+}
+
+/* for IE6/7 */
+#LeftMenu, #MainContent { display: inline-block; }
+#LeftMenu, #MainContent { display: block; }
+
+div.BottomMenu
+{
+  display: table;
+  text-align: center;
+  vertical-align: middle;
+  background-color: pink;
+  width: 100%;
+  height: {{ horizontal_menu_height }}px;
+  padding: {{ default_padding }}px;
+  margin: {{ default_padding }}px 0px 0px 0px;
+}
+
+div.PageFooter
+{
+  display: table;
+  background-color: red;
+  width: 100%;
+  padding: {{ default_padding }}px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+div.TopMenuLinks
+{
+  float: left;
+}
+
+input.GenericSearch
+{
+  float: right;
+}
+
+div.SubMenu
+{
+  width: 100%;
+  background-color: orange;
+  padding: 0px;
+  margin: 0px 0px {{ default_padding }}px 0px;
+}
+
+div.MenuTitle
+{
+  width: 100%;
+  font-weight: bold;
+  font-style: underline;
+  font-size: 14px;
+  text-align: center;
+  margin: 0px 0px 6px 0px;
+}
+
+ul.menu
+{
+  width: 100%;
+  padding: 0px 0px 0px 16px;
+  margin: 0px;
+}
+
+li.menu
+{
+  padding: 0px;
+  margin: 0px;
+}
+
+{% endwith %}
+{% endwith %}
+{% endwith %}
+{% endwith %}
