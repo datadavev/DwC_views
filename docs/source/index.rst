@@ -11,6 +11,10 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
+   django_modules
+
+
+
 Indices and tables
 ==================
 
