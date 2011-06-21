@@ -889,8 +889,7 @@ class SOLRRecordTransformer(object):
     return record
 
 #===============================================================================
-  
-  
+ 
 class SOLRArrayTransformer(SOLRRecordTransformer):
   '''
   A transformer that returns a list of values for the sepcified columns.
@@ -914,7 +913,6 @@ class SOLRArrayTransformer(SOLRRecordTransformer):
     
 
 #===============================================================================
-
 
 class SOLRSearchResponseIterator(object):
   '''

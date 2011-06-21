@@ -3,9 +3,21 @@
 {% block main_content %}
 
 {% for result in results %}
-<div style="border-width: 2px; border-style: solid; margin: 2px; padding: 2px;">
-  {{ result }}
-</div>
+<table border="0" cellpadding="0" cellspacing="0" style="border-style: solid; border-color: black; border-width: 2px; margin: 2px;">
+ <tbody>
+  {% for key, value in result.items %}
+  <tr>
+    {% if forloop.last %}
+   <td style="padding: 2px; font-weight: bold; border-style: solid; border-color: black; border-width: 0px 2px 0px 0px">{{ key }}</td>
+   <td style="padding: 2px">{{ value }}</td>
+    {% else %}
+   <td style="font-weight: bold; padding: 2px; border-style: solid; border-color: black; border-width: 0px 2px 2px 0px">{{ key }}</td>
+   <td style="padding: 2px; border-style: solid; border-color: black; border-width: 0px 0px 2px 0px">{{ value }}</td>
+    {% endif %}
+  </tr>
+  {% endfor %}
+ </tbody>
+</table>
 {% empty %}
   There Were No Results
 {% endfor %}
