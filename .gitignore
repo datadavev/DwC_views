@@ -1,3 +1,20 @@
+# .gitignore
+# This file specifies files that should be ignored when
+# committing to the repository
+
+# python compiled (byte-code) files
+*.pyc
+
+# Vi(M) swap/recovery files
+.*.swp
+
+# Any OS Generated Files
+.DS_Store?
+ehthumbs.db
+Icon?
+Thumbs.db
+
+# Other Miscellaneous Files
 .project
 DwC_views.tmproj
 
