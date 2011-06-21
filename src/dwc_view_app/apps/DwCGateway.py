@@ -1,10 +1,15 @@
+'''
+Darwin Core Views Gateway Library
+'''
 #from google.appengine.api import memcache
 from django.utils import simplejson
 from solrclient import SolrConnection
 from datetime import datetime
 
 class SOLRGateway:
-
+'''
+Darwin Core Views Gateway Implementation for SOLR Backends
+'''
   fields = None
   connection = None
 
