@@ -1,5 +1,10 @@
 '''
-Darwin Core Views Gateway Library
+:mod:`DwCGateway`
+=================
+
+:Synopsis:
+  Darwin Core Views Gateway Library
+
 '''
 #from google.appengine.api import memcache
 from django.utils import simplejson
@@ -7,9 +12,8 @@ from solrclient import SolrConnection
 from datetime import datetime
 
 class SOLRGateway:
-'''
-Darwin Core Views Gateway Implementation for SOLR Backends
-'''
+  '''Darwin Core Views Gateway Implementation for SOLR Backends
+  '''
   fields = None
   connection = None
 
@@ -24,6 +28,11 @@ Darwin Core Views Gateway Implementation for SOLR Backends
     return
 
   def GetSummary(self):
+    '''Provide a summary of the collection.
+    
+    :returns: Structure as described in https://github.com/vdave/DwC_views/wiki/GatewayAPIs
+    :rtype: dictionary
+    '''
     summary_params = {}
     summary_params['url'] = self.connection.host + self.connection.solrBase
     # get the current system time (note, this is time on
@@ -73,7 +82,24 @@ Darwin Core Views Gateway Implementation for SOLR Backends
     return json
 
   def GetRecords(self, q="*:*", fields="*", orderby=None,
-                 order="asc", start=0, count=1000): 
+                 order="asc", start=0, count=1000):
+    '''Retrieve a page of records from the SOLR service.
+    
+    :param q: Query string
+    :type q: string
+    :param fields: Comma delimited list of field names to return
+    :type fields: string
+    :param orderby: Name of field to sort results by
+    :type orderby: string
+    :param order: Indicates order of sorting, one of "asc" or "desc"
+    :type orderby: string
+    :param start: Zero based index of the first record in the response
+    :type start: integer
+    :param count: Number of records to return in results
+    :type count: integer
+    :return: List of records as described in https://github.com/vdave/DwC_views/wiki/GatewayAPIs
+    :rtype: dictionary 
+    '''
     params = {'q': q,
               'fl': fields,
               'rows': count,

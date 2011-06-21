@@ -1,4 +1,13 @@
 # Django settings for coreyosandbox project.
+'''
+:mod:`settings`
+===============
+
+:Synopsis:
+  Application level settings.
+
+'''
+
 import os
 
 DEBUG = True
