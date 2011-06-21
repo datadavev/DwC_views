@@ -92,7 +92,7 @@ class TestGatewayApi(unittest.TestCase):
               'filter':'*:*'}
   
     url = urlparse.urljoin(self.serviceUrl,"records?%s" % urllib.urlencode(params))
-    logging.debug("getfieldrecords url = %s" % url)
+    logging.debug("get records url = %s" % url)
     response = urllib.urlopen(url)
     self.assertEqual(response.getcode(), 200)
     records = json.loads(response.read(), 'utf-8')
@@ -104,8 +104,16 @@ class TestGatewayApi(unittest.TestCase):
     self.assertTrue(rec0.has_key('id'))
     self.assertTrue(rec0.has_key('genus_s'))
     
+
+  def testGetRecord(self):
+    id = "UAM.Fish.3368."
+    url = urlparse.urljoin(self.serviceUrl, "record/%s" % urllib.quote(id))
+    logging.debug("get record url = %s" % url)
+    response = urllib.urlopen(url)
+    self.assertEqual(response.getcode(), 200)
     
-#================================================================================
+
+#===============================================================================
 
 if __name__ == "__main__":
   logging.basicConfig(level=logging.DEBUG)
