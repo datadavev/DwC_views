@@ -1,8 +1,25 @@
-'''
-Created on Jun 21, 2011
+'''Unit tests for the DwC Views Gateway API
 
-@author: vieglais
+This work was created by participants in projects sponsored by the National 
+Science Foundation (NSF-DBI-0415600, NSF-DBI-0955076) and is copyrighted by 
+The University of Kansas. For more information on DataONE, see our web site 
+at http://naturalhistory.ku.edu/.
+
+    Copyright 2011, University of Kansas
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not 
+use this file except in compliance with the License. You may obtain a copy 
+of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0 
+
+Unless required by applicable law or agreed to in writing, software 
+distributed under the License is distributed on an "AS IS" BASIS, WITHOUT 
+WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the 
+License for the specific language governing permissions and limitations 
+under the License.
 '''
+
 import unittest
 import logging
 import urllib
@@ -11,10 +28,15 @@ import json
 
 
 class TestGatewayApi(unittest.TestCase):
+  '''Simple exercise of the gateway API. Currently checks for status 
+  of response and that the structure of the response objects matches 
+  the specifications_.
+  
+  .. _specifications: https://github.com/vdave/DwC_views/wiki/GatewayAPIs
+  '''
 
   def setUp(self):
     self.serviceUrl = "http://coreyosandbox.appspot.com/gateway/"
-    self.uparts = urlparse.urlsplit(self.serviceUrl)
 
 
   def testGetSummary(self):
@@ -60,7 +82,7 @@ class TestGatewayApi(unittest.TestCase):
     self.assertTrue(isinstance(values, list))
     v0 = values[0]
     self.assertTrue(isinstance(values, list))
-    self.assertEqual(v0.length, 2)
+    self.assertEqual(len(v0), 2)
 
     
   def testGetRecods(self):
@@ -82,8 +104,11 @@ class TestGatewayApi(unittest.TestCase):
     self.assertTrue(rec0.has_key('id'))
     self.assertTrue(rec0.has_key('genus_s'))
     
+    
+#================================================================================
 
 if __name__ == "__main__":
   logging.basicConfig(level=logging.DEBUG)
   #import sys;sys.argv = ['', 'Test.testName']
   unittest.main()
+  
