@@ -5,7 +5,16 @@ from django.conf.urls.defaults import *
 # admin.autodiscover()
 
 urlpatterns = patterns('',
+    # Dynamic CSS (Django CSS Templates)
     (r'^pcss/(?P<stylefile>.+)$', 'views.pcss'),
+    # Darwin Core Views Gateway Web Services
+    (r'^gateway/$', 'views.getSummary'),
+    (r'^gateway/fields$', 'views.getFields'),
+    (r'^gateway/fields/(?P<name>[A-Za-z0-9_]+)$', 'views.getField'),
+    (r'^gateway/fields/(?P<name>[A-Za-z0-9_]+)/values$', 'views.getFieldValues'),
+    (r'^gateway/records$', 'views.getRecords'),
+    (r'^gateway/records/(?P<record_id>.+)$', 'views.getRecord'),
+    # Test Page
     (r'^$', 'views.test'),
     #(r'^$', 'views.index'),
     # Example:
