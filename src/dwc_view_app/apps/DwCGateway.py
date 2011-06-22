@@ -88,7 +88,7 @@ class SOLRGateway:
     f_attributes['name'] = name
     f_attributes['type'] = field['type']
     f_attributes['distinct'] = field['distinct']
-    f_attributes['stored'] = "false"
+    f_attributes['stored'] = (field['schema'][2] == 'S')
     json = simplejson.JSONEncoder().encode(f_attributes)
     return json
 
