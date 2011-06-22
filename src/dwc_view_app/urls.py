@@ -12,7 +12,7 @@ urlpatterns = patterns('',
     (r'^gateway/fields$', 'views.getFields'),
     (r'^gateway/fields/(?P<name>[A-Za-z0-9_]+)$', 'views.getField'),
     (r'^gateway/fields/(?P<name>[A-Za-z0-9_]+)/values$', 'views.getFieldValues'),
-    (r'^gateway/record$', 'views.getRecords'),
+    (r'^gateway/records$', 'views.getRecords'),
     (r'^gateway/record/(?P<record_id>.+)$', 'views.getRecord'),
     # Test Page
     (r'^$', 'views.test'),

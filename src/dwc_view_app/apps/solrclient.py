@@ -1,8 +1,15 @@
 '''
-This client code is built from:
-http://svn.apache.org/viewvc/lucene/solr/tags/release-1.2.0/client/python/solr.py
+:mod:`SolrClient`
+=================
 
-though has been modified in many respects.
+:Synopsis
+  Python SOLR Client Library
+
+  This client code is built from:
+  http://svn.apache.org/viewvc/lucene/solr/tags/release-1.2.0/client/python/solr.py
+  though has been modified in many respects.
+
+
 '''
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
