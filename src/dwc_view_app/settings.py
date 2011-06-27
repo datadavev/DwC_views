@@ -62,6 +62,11 @@ MEDIA_ROOT = ''
 # Examples: "http://media.lawrence.com", "http://example.com/media/"
 MEDIA_URL = ''
 
+# Static File Serve Directory
+# This should be used only for testing, as it is insecure and inefficient.
+# For development, please use a proper setup in your web server
+STATIC_DOC_ROOT = 'static/'
+
 # URL prefix for admin media -- CSS, JavaScript and images. Make sure to use a
 # trailing slash.
 # Examples: "http://foo.com/media/", "/media/".

@@ -1,4 +1,5 @@
 from django.conf.urls.defaults import *
+from django.conf import settings
 
 # Uncomment the next two lines to enable the admin:
 # from django.contrib import admin
@@ -7,6 +8,9 @@ from django.conf.urls.defaults import *
 urlpatterns = patterns('',
     # Dynamic CSS (Django CSS Templates)
     (r'^pcss/(?P<stylefile>.+)$', 'views.pcss'),
+    # Serve Static Content (Should Only Be Used For Testing!)
+    (r'^static/(?P<path>.*)$', 'django.views.static.serve',
+      {'document_root': settings.STATIC_DOC_ROOT, 'show_indexes': False}),
     # Darwin Core Views Gateway Web Services
     (r'^gateway/$', 'views.getSummary'),
     (r'^gateway/fields$', 'views.getFields'),

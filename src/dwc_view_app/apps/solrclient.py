@@ -437,7 +437,6 @@ class SolrConnection:
     return None
     
     
-
   def getFields(self, numTerms=1):
     '''Retrieve a list of fields.  The response looks something like:
 {
