@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 '''Unit tests for the DwC Views Gateway API
 
 This work was created by participants in projects sponsored by the National 
@@ -105,6 +106,27 @@ class TestGatewayApi(unittest.TestCase):
     self.assertTrue(rec0.has_key('id'))
     self.assertTrue(rec0.has_key('genus_s'))
     
+
+  def testGetRecordsUnicode(self):
+    '''Simple unicode test - basically checks that text being passed through 
+    the gateway is as expected from the original input to SOLR. 
+    '''
+    params = {'start':0,
+              'count':10,
+              'fields':'id,genus_s,stateProvince_s,locality_t',
+              'filter':'stateProvince_s:Ogoou*'}
+  
+    url = urlparse.urljoin(self.serviceUrl,"records?%s" % urllib.urlencode(params))
+    logging.debug("get records url = %s" % url)
+    response = urllib2.urlopen(url)
+    self.assertEqual(response.code, 200)
+    records = json.loads(response.read(), 'utf-8')
+    #A few known test values
+    testvalues = ['Ogooué-Invindo', 'Ogooué/Ivindo', 'Ogooué-Ivindo']
+    for rec in records['docs']:
+      print u"%s,  %s" % (rec['stateProvince_s'][0], rec['locality_t'][0])
+      self.assertTrue(rec['stateProvince_s'][0] in testvalues)
+
 
   def testGetRecord(self):
     return
