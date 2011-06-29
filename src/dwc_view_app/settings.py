@@ -9,6 +9,7 @@
 '''
 
 import os
+from django.utils import simplejson as json
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
@@ -111,3 +112,21 @@ INSTALLED_APPS = (
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
 )
+
+# Data Caching Options
+CACHE_BACKEND = 'locmem://?timeout=86400' # 24 hours (60 * 60 * 24)
+#CACHE_BACKEND = 'file:///' + ROOT_PATH + '/tmp/django_cache?timeout=86400' # 24 hours (60 * 60 * 24)
+#CACHE_BACKEND = 'file:///tmp/django_cache?timeout=86400' # 24 hours (60 * 60 * 24)
+
+#####################################################
+# JSON Encoding/Output Option:
+# These can be used to increase JSON human
+# readability or make more compact, performance-
+# efficient JSON
+# This option expects a function that will take a
+# python object and encode it as a JSON string
+#####################################################
+# human readable option
+JSON_ENCODER = json.JSONEncoder(encoding="utf-8", indent="2", separators=(', ',': ')).encode
+# compact, performance option
+#JSON_ENCODER = json.JSONEncoder(encoding="utf-8", indent=None, separators=(',',':')).encode

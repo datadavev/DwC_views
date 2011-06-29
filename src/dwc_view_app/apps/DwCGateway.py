@@ -8,34 +8,54 @@
 
 '''
 #from google.appengine.api import memcache
-from django.utils import simplejson
+from django.utils import simplejson as json
+from django.core.cache import cache
 from solrclient import SolrConnection
 from datetime import datetime
 
 class SOLRGateway:
   '''Darwin Core Views Gateway Implementation for SOLR Backends
   '''
+
   __fields = None
   __connection = None
+  __json_encoder = json.JSONEncoder(encoding='utf-8', separators=(',', ':')).encode
+  __connection = None
+  __identifier = 'solr'
 
-  def __init__(self, connection):
+
+  def __init__(self, host=None, basedir=None, encoder=__json_encoder, identifier='solr'):
     '''SOLRGateway constructor.
     
-    :param connection: SolrConnection object as described in the solrclient library
-    :type connection: SolrConnection
+    :param host: SOLR Server Address (i.e. "serrano.speciesanalyst.net")
+    :type host: string
+    :param basedir: the direcotry of the SOLR service (i.e. "/solr")
+    :type basedir: string
+    :param encoder: a function that takes a Python object and encodes it into a JSON string (only used if you wish to override the default).
+    :type encoder: function
     :returns: Structure as described in https://github.com/vdave/DwC_views/wiki/GatewayAPIs
-    :rtype: dictionary
+    :rtype: SOLRGateway Object Instance
     '''
-    self.__connection = connection
+
+    #if host == None || basedir == None:
+    #  raise Error('You Must Specify a Host/Dir')
+
+    self.__connection = SolrConnection(host=host, solrBase=basedir)
+    self.__json_encoder = encoder
+    self.__identifier = identifier
+    
 
   # private function that fetches server's field information
   def __FetchFields(self):
     if self.__fields == None:
-      self.__fields = self.__connection.getFields()
+      self.__fields == cache.get(self.__identifier + '_fields')
+      if self.__fields == None:
+        self.__fields = self.__connection.getFields()
+        self.__CacheFields(self.__fields)
 
   # private function that handles internel caching of fields and field values
-  def _CacheFields(self):
-    return
+  def __CacheFields(self, fields):
+    cache.set(self.__identifier + '_fields', fields);
 
   def GetSummary(self):
     '''Provide a summary of the collection.
@@ -44,8 +64,9 @@ class SOLRGateway:
     *lastModified: If not supported directly by the data server, the "lastModified" field will use the max value from a "modified" field from the records themselves to determine when the database was last modified.
     
     :returns: Structure as described in https://github.com/vdave/DwC_views/wiki/GatewayAPIs
-    :rtype: dictionary
+    :rtype: JSON UTF-8 encoded string
     '''
+
     summary_params = {}
     summary_params['url'] = self.__connection.host + self.__connection.solrBase
     # get the current system time (note, this is time on
@@ -59,19 +80,21 @@ class SOLRGateway:
     response = results['response']
     summary_params['numRecords'] = response['numFound']
     summary_params['lastModified'] = response['docs'][0]["modified"]
-    json = simplejson.JSONEncoder().encode(summary_params)
-    return json
+
+    json_dump = self.__json_encoder(summary_params)
+    return json_dump
 
   def GetFields(self):
     '''Provide a listing of different fields found within the server's records.
     
     :returns: Structure as described in https://github.com/vdave/DwC_views/wiki/GatewayAPIs
-    :rtype: dictionary
+    :rtype: JSON UTF-8 encoded string
     '''
 
     self.__FetchFields()
-    json = simplejson.JSONEncoder().encode(self.__fields['fields'].keys())
-    return json
+
+    json_dump = self.__json_encoder(self.__fields['fields'].keys())
+    return json_dump
 
   def GetField(self, name):
     '''Provide a listing of distinct values and value counts for the given field.
@@ -79,7 +102,7 @@ class SOLRGateway:
     :param name: The name of the field
     :type name: string
     :returns: Structure as described in https://github.com/vdave/DwC_views/wiki/GatewayAPIs
-    :rtype: dictionary
+    :rtype: JSON UTF-8 encoded string
     '''
 
     self.__FetchFields()
@@ -89,8 +112,10 @@ class SOLRGateway:
     f_attributes['type'] = field['type']
     f_attributes['distinct'] = field['distinct']
     f_attributes['stored'] = (field['schema'][2] == 'S')
-    json = simplejson.JSONEncoder().encode(f_attributes)
-    return json
+
+    json_dump = self.__json_encoder(f_attributes)
+
+    return json_dump
 
   def GetFieldValues(self, name):
     '''Provide a listing of distinct values and value counts for the given field.
@@ -98,8 +123,9 @@ class SOLRGateway:
     :param name: The name of the field
     :type name: string
     :returns: Structure as described in https://github.com/vdave/DwC_views/wiki/GatewayAPIs
-    :rtype: dictionary
+    :rtype: JSON UTF-8 encoded string
     '''
+
     values = self.__connection.fieldValues(name)
     # values are wrapped in 3 levels of lists, exract the inner level
     values = values.items()[0][1]
@@ -113,8 +139,8 @@ class SOLRGateway:
       value_pairs.append([values[i], values[i+1]])
       i = i+2
 
-    json = simplejson.JSONEncoder().encode(value_pairs)
-    return json
+    json_dump = self.__json_encoder(value_pairs)
+    return json_dump
 
   def GetRecords(self, q="*:*", fields="*", orderby=None,
                  order="asc", start=0, count=1000):
@@ -133,8 +159,9 @@ class SOLRGateway:
     :param count: Number of records to return in results
     :type count: integer
     :return: List of records as described in https://github.com/vdave/DwC_views/wiki/GatewayAPIs
-    :rtype: dictionary 
+    :rtype: JSON UTF-8 encoded string
     '''
+
     params = {'q': q,
               'fl': fields,
               'rows': count,
@@ -145,8 +172,8 @@ class SOLRGateway:
 
     results = self.__connection.search(params)
     response = results['response']
-    json = simplejson.JSONEncoder().encode(response)
-    return json
+    json_dump = self.__json_encoder(response)
+    return json_dump
 
   def GetRecord(self, record_id):
     '''Retreives a record with the given id.
@@ -154,8 +181,9 @@ class SOLRGateway:
     :param record_id: The id of the record
     :type record_id: string
     :returns: Structure as described in https://github.com/vdave/DwC_views/wiki/GatewayAPIs
-    :rtype: dictionary
+    :rtype: JSON UTF-8 encoded string
     '''
+
     record = self.__connection.get(record_id)
-    json = simplejson.JSONEncoder().encode(record)
-    return json
+    json_dump = self.__json_encoder(record)
+    return json_dump

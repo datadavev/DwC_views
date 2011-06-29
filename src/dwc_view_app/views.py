@@ -7,11 +7,13 @@
 
 '''
 from string import atoi
+from django.conf import settings
 from django.shortcuts import render_to_response, get_object_or_404
 from django.http import HttpResponse
 from django.core.servers.basehttp import FileWrapper
+from django.utils.simplejson import JSONEncoder
+from django.views.decorators.cache import cache_page
 from apps.DwCGateway import SOLRGateway
-from apps.solrclient import SolrConnection, SOLRSearchResponseIterator, SOLRValuesResponseIterator, SOLRArrayResponseIterator
 
 def index(request):
   '''Default "index" view
@@ -26,14 +28,9 @@ def pcss(request, stylefile):
   '''
   return render_to_response('pcss/' + stylefile, mimetype='text/css')
 
-# serve static content (for development only)
-#def static(request, staticfile):
-#	return render_to_response('static/' + stylefile)
-
-
 ### Darwin Core Views Gateway Web Services ###
-connection = SolrConnection(host="serrano.speciesanalyst.net", solrBase="/solr")
-gateway = SOLRGateway(connection)
+encoder = JSONEncoder(encoding='utf-8', indent=2, separators=(', ', ': ')).encode
+gateway = SOLRGateway(host="serrano.speciesanalyst.net", basedir="/solr", encoder=encoder, identifier="MySolrID")
 
 def getSummary(request):
   '''Output a general summary of the Darwin Core Database Server
@@ -42,15 +39,16 @@ def getSummary(request):
   :rtype: json
   '''
   summary = gateway.GetSummary()
-  return HttpResponse(summary)
+  return HttpResponse(summary, mimetype='application/json')
 
+@cache_page()
 def getFields(request):
   '''Output a listing of all fields found within the server's documents 
   :returns: JSON structure from the getFields() function as described in https://github.com/vdave/DwC_views/wiki/GatewayAPIs
   :rtype: json
   '''
   fields = gateway.GetFields()
-  return HttpResponse(fields)
+  return HttpResponse(fields, mimetype='application/json')
 
 def getField(request, name):
   '''Output general information about the requested field
@@ -62,7 +60,7 @@ def getField(request, name):
   '''
 
   field = gateway.GetField(name)
-  return HttpResponse(field)
+  return HttpResponse(field, mimetype='application/json')
 
 def getFieldValues(request, name):
   '''Output a listing of unique values and their occurance count for the given field
@@ -73,7 +71,7 @@ def getFieldValues(request, name):
   :rtype: json
   '''
   values = gateway.GetFieldValues(name)
-  return HttpResponse(values)
+  return HttpResponse(values, mimetype='application/json')
 
 def getRecords(request):
   '''Output a listing of all records found given the defined query parameters
@@ -122,7 +120,7 @@ def getRecords(request):
   results = gateway.GetRecords(q=params['q'], fields=params['fields'],
                                orderby=params['orderby'], order=params['order'],
                                start=params['start'], count=params['count'])
-  return HttpResponse(results)
+  return HttpResponse(results, mimetype='application/json')
 
 def getRecord(request, record_id):
   '''Output a server record as identified by its record_id
@@ -133,24 +131,9 @@ def getRecord(request, record_id):
   :rtype: json
   '''
   record = gateway.GetRecord(record_id)
-  return HttpResponse(record)
+  return HttpResponse(record, mimetype='application/json')
 
 
 # Proof of Concept View
 def test(request):
-  client = SolrConnection(host="serrano.speciesanalyst.net", solrBase="/solr")
-  results = client.search({'q':'*:*'})
-  rows = results['response']['docs']
-  context = {
-    "results": rows,
-  }
-  return render_to_response('test.html', context)
-
-#def attachment(request, attachment_id):
-#	attachment = get_object_or_404(models.Attachment, pk=attachment_id)
-#	wrapper = FileWrapper(attachment.file_data)
-#	response = HttpResponse(wrapper, mimetype=attachment.mime_type)
-#	if request.GET.has_key('download'):
-#		response['Content-Disposition'] = "attachment; filename=%s" % (attachment.filename())
-#	response['Content-Length'] = attachment.file_data.size
-#	return response
+  return render_to_response('test.html')
