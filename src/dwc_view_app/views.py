@@ -29,7 +29,8 @@ def pcss(request, stylefile):
   return render_to_response('pcss/' + stylefile, mimetype='text/css')
 
 ### Darwin Core Views Gateway Web Services ###
-encoder = JSONEncoder(encoding='utf-8', indent=2, separators=(', ', ': ')).encode
+# use the encoder specified in the settings file
+encoder=settings.JSON_ENCODER
 gateway = SOLRGateway(host="serrano.speciesanalyst.net", basedir="/solr", encoder=encoder, identifier="MySolrID")
 
 def getSummary(request):

@@ -127,6 +127,6 @@ CACHE_BACKEND = 'locmem://?timeout=86400' # 24 hours (60 * 60 * 24)
 # python object and encode it as a JSON string
 #####################################################
 # human readable option
-JSON_ENCODER = json.JSONEncoder(encoding="utf-8", indent="2", separators=(', ',': ')).encode
+JSON_ENCODER = json.JSONEncoder(encoding="utf-8", indent=2, separators=(', ',': ')).encode
 # compact, performance option
 #JSON_ENCODER = json.JSONEncoder(encoding="utf-8", indent=None, separators=(',',':')).encode

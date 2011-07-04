@@ -1,0 +1,181 @@
+{% with 2 as default_padding %}
+
+table.DwCRecordsTable {
+  width: 100%;
+  border: 2px solid black;
+}
+
+tr.DwCRecordsTable_HeaderRow {
+  background-color: #CCCCFF;
+}
+
+.DwCRecordsTable_FieldHeader {
+  -moz-box-sizing: border-box;
+  -ms-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+  padding: {{ default_padding }}px;
+  font-weight: bold;
+  text-align: left;
+  border-style: solid;
+  border-width: black;
+  border-width: 0pc 0px 2px 0px;
+}
+
+td.DwCRecordsTable_Value {
+  -moz-box-sizing: border-box;
+  -ms-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+  padding: {{ default_padding }}px; 
+  text-align: left;
+}
+
+.DwCRecordsTable_FieldSorter {
+  cursor: pointer;
+}
+
+.DwCRecordsTable_ResultRow1 {
+  background-color: #909090;
+}
+
+.DwCRecordsTable_ResultRow2 {
+  background-color: white;
+}
+
+tr.DwCRecordsTable_PagingRow {
+  background-color: #CCCCFF;
+}
+
+.DwCRecordsTable_PagingButtonContainer  {
+  -moz-box-sizing: border-box;
+  -ms-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+  padding: {{ default_padding }}px;
+  font-weight: bold;
+  text-align: center;
+  border-style: solid;
+  border-color: black;
+  border-width: 2px 0px 0px 0px;
+}
+
+.DwCRecordsTable_FooterRow {
+  background-color: white;
+}
+
+.DwCRecordsTable_FloatButton {
+  display: block;
+  margin-left: 2px;
+  margin-right: 2px;
+  cursor: pointer;
+}
+
+.DwCRecordsTable_FirstButton,
+.DwCRecordsTable_PrevButton {
+  float: left;
+}
+
+.DwCRecordsTable_FirstButton:before {
+  content: "[<<]";
+}
+
+.DwCRecordsTable_PrevButton:before {
+  content: "[<-]";
+}
+
+.DwCRecordsTable_NextButton:before {
+  content: "[->]";
+}
+
+.DwCRecordsTable_LastButton:before {
+  content: "[>>]";
+}
+
+.DwCRecordsTable_LastButton,
+.DwCRecordsTable_NextButton {
+  float: right;
+}
+
+.DwCRecordsTable_PagingInfo
+{
+  width: auto;
+  left-margin; auto;
+  right-margin; auto;
+}
+
+div.DwCMenuOverlay
+{
+  z-index: 100;
+}
+
+div.DwCContextMenu
+{
+  z-index: 101;
+  width: 250px;
+  background-color: white;
+  max-height: 350px;
+  min-height: 50px;
+  overflow: -moz-scrollbars-vertical;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  padding: {{ default_padding }}px;
+  border-style: ridge;
+  border-width: 1px;
+  border-color: black;
+}
+
+ul.DwCContextMenu_Group
+{
+  padding: 0px;
+  margin: 0px;
+}
+
+li.DwCContextMenu_GroupHeader
+{
+  font-weight: bold;
+  border-style: ridge;
+  color: black;
+  border-color: black;
+  border-width: 0px 0px 2px 0px;
+  list-style-position: inside;
+  list-style-type: none;
+  background-color: #E0E0FF;
+}
+
+li.DwCContextMenu_Item {
+  padding: 0px 2px 0px 2px;
+  font-weight: normal;
+  color: black;
+  border-color: #E0E0E0;
+  border-style: ridge;
+  border-width: 1px 0px 0px 0px;
+  list-style-position: inside;
+  list-style-type: circle;
+  cursor: pointer;
+  background-color: white;
+}
+
+li.DwCContextMenu_FirstItem
+{
+  border-width: 0px;
+}
+
+li.DwCContextMenu_LastItem
+{
+}
+
+li.DwCContextMenu_ItemOn
+{
+  font-weight: bold;
+  list-style-type: disc;
+  background-color: #E0E0E0;
+}
+
+li.DwCContextMenu_ItemHover
+{
+  font-weight: bold;
+  background-color: #C0C0C0;
+}
+
+{% endwith %}

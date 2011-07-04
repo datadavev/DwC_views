@@ -41,7 +41,8 @@ class SOLRGateway:
     #  raise Error('You Must Specify a Host/Dir')
 
     self.__connection = SolrConnection(host=host, solrBase=basedir)
-    self.__json_encoder = encoder
+    if encoder:
+      self.__json_encoder = encoder
     self.__identifier = identifier
     
 
@@ -52,6 +53,7 @@ class SOLRGateway:
       if self.__fields == None:
         self.__fields = self.__connection.getFields()
         self.__CacheFields(self.__fields)
+
 
   # private function that handles internel caching of fields and field values
   def __CacheFields(self, fields):
@@ -84,17 +86,20 @@ class SOLRGateway:
     json_dump = self.__json_encoder(summary_params)
     return json_dump
 
-  def GetFields(self):
-    '''Provide a listing of different fields found within the server's records.
-    
-    :returns: Structure as described in https://github.com/vdave/DwC_views/wiki/GatewayAPIs
-    :rtype: JSON UTF-8 encoded string
-    '''
 
-    self.__FetchFields()
+  def __formatFieldAttributes(self, name):
 
-    json_dump = self.__json_encoder(self.__fields['fields'].keys())
-    return json_dump
+    field = self.__fields['fields'][name]
+
+    f_attributes = {}
+    f_attributes['type'] = field['type']
+    f_attributes['distinct'] = field['distinct']
+    f_attributes['stored'] = field['schema'][2] == 'S'
+    f_attributes['multivalued'] = field['schema'][3] == 'M'
+    f_attributes['label'] = ''
+
+    return f_attributes
+
 
   def GetField(self, name):
     '''Provide a listing of distinct values and value counts for the given field.
@@ -105,17 +110,31 @@ class SOLRGateway:
     :rtype: JSON UTF-8 encoded string
     '''
 
-    self.__FetchFields()
-    field = self.__fields['fields'][name]
-    f_attributes = {}
-    f_attributes['name'] = name
-    f_attributes['type'] = field['type']
-    f_attributes['distinct'] = field['distinct']
-    f_attributes['stored'] = (field['schema'][2] == 'S')
+    self.__FetchFields();
 
-    json_dump = self.__json_encoder(f_attributes)
+    f_attributes = self.__formatFieldAttributes(name)
+    json_dump = self.__json_encoder({ name: f_attributes })
 
     return json_dump
+
+
+  def GetFields(self):
+    '''Provide a listing of different fields found within the server's records.
+    
+    :returns: Structure as described in https://github.com/vdave/DwC_views/wiki/GatewayAPIs
+    :rtype: JSON UTF-8 encoded string
+    '''
+
+    self.__FetchFields();
+
+    fields = {};
+    # format our field information
+    for name in self.__fields['fields']:
+      fields[name] = self.__formatFieldAttributes(name)
+
+    json_dump = self.__json_encoder(fields)
+    return json_dump
+
 
   def GetFieldValues(self, name):
     '''Provide a listing of distinct values and value counts for the given field.
@@ -174,6 +193,7 @@ class SOLRGateway:
     response = results['response']
     json_dump = self.__json_encoder(response)
     return json_dump
+
 
   def GetRecord(self, record_id):
     '''Retreives a record with the given id.
