@@ -11,10 +11,14 @@
 
     this.options = {};
 
+    // store this object instance in the main element's .data() attribute
     element.data('DwCViews', this);
 
     this.init = function(element, option) {
+
+      // merge default options and options passed into the function
       this.options = $.extend({}, $.DwCViews.defaultOptions, options);
+
     }
 
   
@@ -60,6 +64,296 @@
   // function privFunc(obj) {}
 
 
+
+
+  /***************************************************************************
+   * DwCRecordTable
+   *
+   * Part of the DwCViews (Darwin Core Views) Suite
+   *
+   * A table used to view a single record within a Darwin Core Database
+   ***************************************************************************/
+
+  $.DwCRecordTable = function(element, options) {
+
+    this.options = {};
+
+    element.data('DwCRecordTable', this);
+
+    this.init = function(element, option) {
+
+      this.options = $.extend({}, $.DwCRecordTable.defaultOptions, options);
+
+      // create a handle for our html element
+      this.element = element;
+
+      // build the base Darwin Core Views URL
+      this.base_url = this.options.gatewayAddress + this.options.baseDir;
+
+      this.tbody = null;
+      this.globalDefaultValue = options.globalDefaultValue;
+      this.recordID = this.options.recordID;
+      this.idField = this.options.idField;
+      this.hideButton = null;
+      this.searchBox = null;
+      this.searchButton = null;
+
+      prepareRecordTable(this);
+      // go ahead and build the table's data unless otherwise specified
+      if (this.options.loadOnInit) {
+        fetchRecord(this);
+      }
+
+    }
+
+  
+  /***************************************************************************
+   * DwCRecordTable - Begin Public Functions
+   ***************************************************************************/
+
+  // change the record being displayed by the DwCRecordTable
+  this.setRecordID = function(id) {
+    this.recordID = id.toString();
+    this.searchBox.attr('value', this.recordID);
+    fetchRecord(this);
+  }
+
+
+  // hide the table (if not already hidden)
+  this.showTable = function() {
+    var element = this.element;
+    element.fadeIn('slow', function() {
+      element.show();
+    });
+  }
+
+
+  // show the table (if it is hidden)
+  this.hideTable = function() {
+    var element = this.element;
+    element.fadeOut('slow', function() {
+      element.hide();
+    });
+  }
+
+
+  this.populateTable = function(record) {
+    var obj = this; // object handle for callback functions
+    var i = 1; // field counter
+    var blank_row_html = '<tr class="DwCRecordTable_RecordRow"></tr>'; 
+    var row;
+    var field_label;
+    var field_value;
+
+    // clear out any existing rows
+    this.tbody.find("tr.DwCRecordTable_RecordRow").remove();
+
+    row = $(blank_row_html);
+    // set a special class for the first row
+    row.addClass('DwCRecordTable_FirstRecordRow');
+
+    // the first field displayed should be the ID field (if it exists)
+    if (this.idField in record) {
+      // field name
+      field_label = $('<td class="DwCRecordTable_FieldLabel"></td>');
+      field_label.text(this.idField);
+      field_label.addClass('DwCRecordTable_FirstRecordRowCell');
+      field_label.addClass('DwCRecordTable_FieldLabel_LeftColumn');
+      row.append(field_label);
+      // field value
+      field_value = $('<td class="DwCRecordTable_FieldValue"></td>');
+      field_value.text(record[this.idField].toString());
+      field_value.addClass('DwCRecordTable_FirstRecordRowCell');
+      field_value.addClass('DwCRecordTable_FieldValue_LeftColumn');
+      row.append(field_value);     
+      var i = 2;
+    }
+    
+    // loop through each field and add it to the table
+    $.each(record, function(field, value) {
+      // skip the id field, since we already displayed it
+      if (field.toString() != obj.idField) {
+
+        // field name
+        field_label = $('<td class="DwCRecordTable_FieldLabel"></td>');
+        field_label.text(field);
+        row.append(field_label);
+        // field value
+        field_value = $('<td class="DwCRecordTable_FieldValue"></td>');
+        field_value.text(value.toString());
+        row.append(field_value);
+
+        // if this is the first row, add as special class to each cell
+        if (i < 3) { 
+          field_label.addClass('DwCRecordTable_FirstRecordRowCell');
+          field_value.addClass('DwCRecordTable_FirstRecordRowCell');
+        }
+
+        // add a special class for the right / left columns
+        if (i % 2) {
+          field_label.addClass('DwCRecordTable_FieldLabel_LeftColumn');
+          field_value.addClass('DwCRecordTable_FieldValue_LeftColumn');
+        }
+          else {
+          field_label.addClass('DwCRecordTable_FieldLabel_RightColumn');
+          field_value.addClass('DwCRecordTable_FieldValue_RightColumn');
+        }
+
+        // new row every 2 fields
+        if ((i % 2) == 0) {
+          // alternating row classes
+          if ((i % 4) == 0) {
+            row.addClass("DwCRecordTable_RecordRow1");
+          }
+          else {
+            row.addClass("DwCRecordTable_RecordRow2");
+          }
+          obj.tbody.append(row);
+          row = $(blank_row_html);
+        }
+        i++;
+      }
+    });
+
+    // if we left on an odd-numbered field, fill in the rest of the table
+    // with blank cells
+    if ((i % 2) == 0) {
+      field_label = $('<td class="DwCRecordTable_FieldLabel"></td>');
+      field_label.addClass('DwCRecordTable_FieldLabel_RightColumn');
+      row.append(field_label);
+      field_value = $('<td class="DwCRecordTable_FieldValue"></td>');
+      field_value.addClass('DwCRecordTable_FieldValue_RightColumn');
+      row.append(field_value);
+      this.tbody.append(row);
+    }
+
+    // set a special class for the last row
+    row = obj.tbody.find('tr.DwCRecordTable_RecordRow:last');
+    row.addClass('DwCRecordTable_LastRecordRow');
+    // set a special class for all cells in the last row
+    row.find('td.DwCRecordTable_FieldLabel,td.DwCRecordTable_FieldValue').addClass('DwCRecordTable_LastRecordRowCell');
+
+  }
+
+
+  /***************************************************************************
+   * DwCRecordTable - Final Initialization Call
+   ***************************************************************************/
+
+    this.init(element, options);
+
+  };
+
+
+  /***************************************************************************
+   * DwCRecordTable - Namespace Declaration
+   ***************************************************************************/
+
+  $.fn.DwCRecordTable = function(options) {
+    return this.each(function() {
+      (new $.DwCRecordTable($(this), options));
+    });
+  };
+
+
+  /***************************************************************************
+   * DwCRecordTable - Default Options
+   ***************************************************************************/
+
+  $.DwCRecordTable.defaultOptions = {
+    loadOnInit: true,
+    idField: "id",
+    recordID: null,
+    gatewayAddress: "",
+    baseDir: "/gateway/",
+    globalDefaultValue: '',
+    showHideButton: true
+  };
+
+
+  /***************************************************************************
+   * DwCRecordTable - Begin Private Functions
+   ***************************************************************************/
+
+  function prepareRecordTable(obj) {
+    obj.element.addClass('DwCRecordTable');
+
+    // see if a <thead> tag already exists
+    var thead = obj.element.find("thead:last");
+    if (thead.length == 0) {
+      // create a <thead> tag
+      thead = $('<thead></thead>');
+      obj.element.prepend(thead);
+    }
+    else {
+      thead = thead[0];
+    }
+
+    // create a header (control buttons) row
+    var control_row = $('<tr class="DwCRecordTable_ControlRow"></tr>');
+    var controls_container = $('<th class="DwCRecordTable_ControlsContainer"></th>');
+    controls_container.attr('colspan', 4);
+    var hide_button = $('<div class="DwCRecordTable_HideButton"></div>');
+    hide_button.addClass('DwCRecordTable_ClickObject');
+    var search_button = $('<div class="DwCRecordTable_SearchButton"></div>');
+    search_button.addClass('DwCRecordTable_ClickObject');
+    var search_box = $('<input class="DwCRecordTable_SearchBox" type="text"></text>');
+    search_box.attr('value', obj.recordID.toString());
+    controls_container.append(search_box);
+    controls_container.append(search_button);
+    controls_container.append(hide_button);
+    control_row.append(controls_container);
+    thead.append(control_row);
+
+    obj.hideButton = hide_button;
+    obj.searchBox = search_box;
+    obj.searchButton = search_button;
+
+    // set the hide button to "hide" this table when clicked
+    hide_button.click(function() {
+      obj.hideTable();
+    });
+
+    // bind a record fetch event when the user presses the 'enter' key
+    // while the textbox is active
+    search_box.keyup(function(event) {
+      if (event.keyCode == 13) {
+        obj.setRecordID($.trim(obj.searchBox.attr('value')));
+      }
+    });
+
+    // bind the search button click to search for the record id
+    // supplied in the search box
+    search_button.click(function() {
+      obj.setRecordID($.trim(obj.searchBox.attr('value')));
+    });
+
+    // see if a <tbody> tage already exists
+    var tbody = obj.element.find("tbody:last");
+    if (tbody.length == 0) {
+      // create a <tbody> tag
+      tbody = $('<tbody></tbody>');
+      tbody.insertAfter(thead);
+    }
+    else {
+      tbody = tbody[0];
+    }
+
+    // set a tbody handle for future reference
+    obj.tbody = tbody;
+  }
+
+
+  function fetchRecord(obj) {
+    var url = obj.base_url + 'record/' + encodeURI(obj.recordID);
+    $.getJSON(url, function(record) {
+      obj.populateTable(record);
+    });
+  }
+
+
+
+
   /***************************************************************************
    * DwCRecordsTable
    *
@@ -89,6 +383,8 @@
       this.sortOrder = this.options.defaultSortOrder;
       this.displayRowNums = this.options.displayRowNums;
       this.globalDefaultValue = this.options.globalDefaultValue;
+      this.recordTable = this.options.recordTable;
+      this.idField = this.options.idField;
       this.total = 0;
       this.data = null;
       this.db_fields = null;
@@ -141,33 +437,80 @@
 
     // display Darwin Core records
     this.populateRecordsData = function(data) {
-      // clear any previous data rows
-      this.element.find("tbody:last").empty();
+      var tbody = this.element.find('tbody:last');
       var obj = this; // handle on our "this" object for the callbacks
-      var tbody_html = "";
       var row_type = 1;
-      $.each(data.docs, function(row_num, record) {
-        tbody_html += '<tr class="DwCRecordsTable_ResultRow' + row_type + '">\n';
+      var row;
+      var cell;
+
+      // clear any previous data rows
+      tbody.empty();
+
+      $.each(data.docs, function(i, record) {
+        var is_first_column = true;
+        row = $('<tr class="DwCRecordsTable_ResultRow"></tr>');
+
+        // add alternating classes to even/odd rows
+        row.addClass('DwCRecordsTable_ResultRow' + row_type);
+
         // if we wish to display row numbers
         if (obj.displayRowNums) {
-          tbody_html += ' <td class="DwCRecordsTable_Value">' + (row_num + obj.start + 1) + '.</td>\n';
+          cell = $('<td class="DwCRecordsTable_Value"></td>');
+          // add a special css class to identify it as a numbering cell
+          cell.addClass('DwCRecordsTable_RowNumValue');
+          // add a special css class to identify it as a first-column cell
+          cell.addClass('DwCRecordsTable_FirstColumnValue');
+          is_first_column = false;
+          cell.text((i + obj.start + 1).toString());
+          row.append(cell);
         }
+
         // loop through each of the defined fields
-        for (var key in obj.fields) {
-          var field = obj.fields[key];
+        $.each(obj.fields, function(key, field) {
           var value = record[key];
           // if the field is undefined for this document, display the default value
           if (value == null) {
              // look for field-specific default value.  Fallback to global default
              value = 'defaultValue' in field? field['defaultValue'] : obj.globalDefaultValue;
           }
-          tbody_html += ' <td class="DwCRecordsTable_Value">' + value + '</td>\n';
+          cell = $('<td class="DwCRecordsTable_Value"></td>');
+          cell.text(value.toString());
+
+          // if this is the first field/column, tag a speciall css class 
+          if (!obj.displayRowNums && is_firs_column) {
+            cell.addClass('DwCRecordsTable_FirstColumnValue');
+          }
+
+          // if we have a coupled DwCRecordTable and this is the ID field,
+          // set a special class and set a click function
+          if ((key.toString() == obj.idField) && (obj.recordTable != null)) {
+            cell.addClass('DwCRecordsTable_ClickObject');
+            cell.addClass('DwCRecordsTable_ClickableValue');
+            cell.click(function() {
+              obj.recordTable.setRecordID(value.toString());
+              obj.recordTable.showTable();
+            });
+          }
+
+          row.append(cell);
+        });
+
+        // tag the last column/cell with a special css class
+        cell.addClass('DwCRecordsTable_LastColumnValue');
+
+        // if this is the first row in the table, give it a special class
+        if (i == 0) {
+          row.addClass('DwCRecordsTable_FirstResultRow');
+          // add a special class to each of the first row's cells too
+          row.find('td.DwCRecordsTable_Value').addClass('DwCRecordsTable_FirstResultRow_Value');
         }
-        tbody_html += "</tr>\n";
+        tbody.append(row);
         // toggle alternating row classes
         row_type = (row_type % 2) + 1;
       });
-      this.element.find("tbody:last").append(tbody_html);
+      // add a special class to the very last result row
+      row.addClass('DwCRecordsTable_LastResultRow');
+      row.find('td.DwCRecordsTable_Value').addClass('DwCRecordsTable_LastResultRow_Value');
     }
 
 
@@ -184,7 +527,7 @@
     // fetch data from the Darwin Core database (if not already cached)
     // cached=false will ignore any existing cache and overwrite it
     this.fetchRecords = function(cached) {
-      var url = prepareUrl(this);
+      var url = prepareRecordsUrl(this);
       var obj = this; // object handler for callback functions
       // clear existing data cache
       if (cached && this.data != null) {
@@ -318,8 +661,9 @@
     defaultSortBy: null,
     defaultSortOrder: "asc",
     displayRowNums: true,
-    dataType: "records",
-    globalDefaultValue: "&nbsp;",
+    globalDefaultValue: '',
+    recordTable: null,
+    idField: 'id',
     fields: {
       "id" : {
         "name": "id",
@@ -352,8 +696,12 @@
 
   // ceate / style-ize column headers
   function prepareHeader(obj) {
+    var cell;
+    var sorter;
+    var field;
     // create a column header row if one does not exist
     var row = obj.element.find(".DwCRecordsTable_HeaderRow");
+
     if (row.length == 0) {
       // is a <thead></thead> tag defined?
       var thead = obj.element.find("thead:last");
@@ -368,25 +716,27 @@
 
     // create result # column if requested in the options
     if (obj.displayRowNums) {
-      if (obj.element.find('.DwCRecordsTable_FieldHeader[DwCViews_Field="__DwCRowNum"]').length == 0) {
-        row.append('<th class="DwCRecordsTable_FieldHeader" DwCViews_Field="__DwCRowNum">&nbsp;</th>)');
+      if (obj.element.find('.DwCRecordsTable_FieldHeader[dwcviews_field="__DwCRowNum"]').length == 0) {
+        cell = $('<th class="DwCRecordsTable_FieldHeader" dwcviews_field="__DwCRowNum">&nbsp;</th>)');
+        row.append(cell);
       }
     }
 
     // create labels for each of fields' column
     for (var key in obj.fields) {
-      var field = obj.fields[key];
+      field = obj.fields[key];
       // if the field/column does not exist, add it
-      if (obj.element.find('.DwCRecordsTable_FieldHeader[DwCViews_Field="' + key + '"]').length == 0) {
+      if (obj.element.find('.DwCRecordsTable_FieldHeader[dwcviews_field="' + key + '"]').length == 0) {
+        cell = $('<th class="DwCRecordsTable_FieldHeader"></th>');
+        cell.attr('dwcviews_field', key.toString());
         // if no label was specified, just display the raw field name
         var label = 'label' in field? field['label'] : key;
-        var html = "";
-        html += '<th class="DwCRecordsTable_FieldHeader" DwCViews_Field="' + key + '">';
-        html += '<div class="DwCRecordsTable_FieldSorter" DwCViews_Field="' + key + '">';
-        html += label;
-        html += '</div>\n';
-        html += '</th>\n';
-        row.append(html);
+        sorter = $('<div class="DwCRecordsTable_FieldSorter"></div>');
+        sorter.attr('dwcviews_field', key.toString());
+        sorter.addClass('DwCRecordsTable_ClickObject');
+        sorter.text(label.toString());
+        cell.append(sorter);
+        row.append(cell);
       }
     }
 
@@ -410,12 +760,13 @@
     // if no <tbody> was defined in the base HTML,
     // add it to the DwCRecordsTable
     if (obj.element.find("tbody").length == 0) {
-      // if there is a <thead>, insert it after the <thead>
-      if (obj.element.find("thead").length == 0) {
-        obj.element.find("thead")[0].after("<tbody></tbody>");
-      }
-      else {
+      // if there is a <thead>, insert it after the <tbody> after it
+      if (obj.element.find("thead:last").length == 0) {
         obj.element.prepend("<tbody></tbody>");
+      }
+      // otherwise, just stick it at the top of the table
+      else {
+        obj.element.find("thead:last").after("<tbody></tbody>");
       }
     }
   }
@@ -447,6 +798,7 @@
       button_container.append('<div class="DwCRecordsTable_FirstButton"></div>');
     }
     first_button = obj.element.find(".DwCRecordsTable_FirstButton");
+    first_button.addClass('DwCRecordsTable_ClickObject');
     first_button.addClass('DwCRecordsTable_FloatButton');
     first_button.click(function() {
       obj.element.data("DwCRecordsTable").firstPage();
@@ -456,6 +808,7 @@
       button_container.append('<div class="DwCRecordsTable_PrevButton"></div>');
     }
     prev_button = obj.element.find(".DwCRecordsTable_PrevButton");
+    prev_button.addClass('DwCRecordsTable_ClickObject');
     prev_button.addClass('DwCRecordsTable_FloatButton');
     prev_button.click(function() {
       obj.element.data("DwCRecordsTable").prevPage();
@@ -465,6 +818,7 @@
       button_container.append('<div class="DwCRecordsTable_LastButton"></div>');
     }
     last_button = obj.element.find(".DwCRecordsTable_LastButton");
+    last_button.addClass('DwCRecordsTable_ClickObject');
     last_button.addClass('DwCRecordsTable_FloatButton');
     last_button.click(function() {
       obj.element.data("DwCRecordsTable").lastPage();
@@ -474,11 +828,11 @@
       button_container.append('<div class="DwCRecordsTable_NextButton"></div>');
     }
     next_button = obj.element.find(".DwCRecordsTable_NextButton");
+    next_button.addClass('DwCRecordsTable_ClickObject');
     next_button.addClass('DwCRecordsTable_FloatButton');
     next_button.click(function() {
       obj.element.data("DwCRecordsTable").nextPage();
     });
-
 
     // Paging Status Container
     if (obj.element.find(".DwCRecordsTable_PagingInfo").length == 0) {
@@ -496,8 +850,9 @@
     });
   }
 
+
   // prepares the URL and its options
-  function prepareUrl(obj) {
+  function prepareRecordsUrl(obj) {
     var params = {};
     if (obj.start) { params["start"] = obj.start; }
     if (obj.count) { params["count"] = obj.count; }
@@ -608,14 +963,24 @@
    ***************************************************************************/
 
     this.showMenu = function(e) {
+      var element = this.element;
+      var overflow;
       this.element.css({position: 'absolute', left: e.pageX, top: e.pageY});
+      this.overlay.css({width: $(document).width() + 'px', height: $(document).height() + 'px'});
       this.overlay.show();
-      this.element.show();
+      // use a fade-in animation
+      this.element.fadeIn(function() {
+        element.show();
+      });
     }
 
 
     this.hideMenu = function() {
-      this.element.hide();
+      element = this.element;
+      // use a fade-out animation
+      element.fadeOut(function() {
+        element.hide();
+      });
       this.overlay.hide();
     }
 
@@ -686,6 +1051,7 @@
 
   function prepareMenu(obj) {
     obj.element.addClass('DwCContextMenu');
+    obj.element.css('display', 'none');
   }
 
 
@@ -755,13 +1121,6 @@
           });
         }
 
-        // take care of mouse-over (hover) styling
-        item_element.hover(function() {
-          $(this).addClass("DwCContextMenu_ItemHover");
-        }, function() {
-          $(this).removeClass("DwCContextMenu_ItemHover");
-        });
-
         last_item_element = item_element;
         group_element.append(item_element);
 
@@ -783,11 +1142,13 @@
     var overlay = $('<div class="DwCMenuOverlay"></div>');
     // set the dimensions of the overlay to cover the entire page
     overlay.css({
-      width: '100%',
-      height: '100%',
+      width: $(document).width() + 'px',
+      height: $(document).height() + 'px',
       position: 'absolute',
       left: '0px',
       top: '0px',
+      backgroundColor: 'transparent',
+      display: 'none'
     });
 
     // keep the overlay hidden until we need it

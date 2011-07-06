@@ -1,15 +1,158 @@
 {% with 2 as default_padding %}
+{% with "#a0a0ff" as header_background_color %}
+{% with "#ccccff" as row1_background_color %}
+{% with "#ffffff" as row2_background_color %}
+
+/******************************************************************
+ * DwCRecordTable Styles
+ ******************************************************************/
+
+table.DwCRecordTable {
+  width: 100%;
+  border: 2px solid black;
+  background-color: #ffffff;
+  font-size: 12px;
+}
+
+.DwCRecordTable_ClickObject {
+  cursor: pointer;
+}
+
+tr.DwCRecordTable_ControlRow {
+  background-color: {{ header_background_color }};
+}
+
+th,td.DwCRecordTable_ControlsContainer {
+  padding: 2px;
+  vertical-align: middle;
+  border-style: solid;
+  border-color: black;
+  border-width: 0px 0px 2px 0px;
+}
+
+/* the table's "hide" button:
+ * set 'display: none;' to hide this globally, can also be hidden
+ * by passing at 'showHideButton: false' in the plugin options */
+.DwCRecordTable_HideButton {
+  float: right;
+  margin: 0px 2px 0px 2px;
+}
+.DwCRecordTable_HideButton:after {
+  content: '[X]';
+}
+
+div.DwCRecordTable_SearchButton {
+  float: left;
+  margin: 0px 2px 0px 2px;
+}
+div.DwCRecordTable_SearchButton:after {
+  content: "[@]";
+}
+
+input.DwCRecordTable_SearchBox {
+  float: left;
+  margin: 0px 2px 0px 2px;
+  width: 150px;
+}
+
+/* all field/value rows */
+tr.DwCRecordTable_RecordRow
+{
+}
+
+tr.DwCRecordTable_FirstRecordRow {
+}
+
+tr.DwCRecordTable_LastRecordRow {
+}
+
+/* even-numbered field/value rows */
+tr.DwCRecordTable_RecordRow1 {
+}
+
+/* odd-numbered field/value rows */
+tr.DwCRecordTable_RecordRow2 {
+}
+
+/* cell holding the name of a field */
+td.DwCRecordTable_FieldLabel
+{
+  border-collapse: separate;
+  empty-cells: show;
+  font-weight: bold;
+  text-align: left;
+  vertical-align: top;
+  padding: 0px 2px 0px 2px;
+  font-size: 1em;
+  background-color: {{ row1_background_color }};
+}
+/* show a colon after each field label */
+td.DwCRecordTable_FieldLabel:after {
+  content: ":";
+}
+td.DwCRecordTable_FieldLabel:empty:after {
+  content: "";
+}
+
+/* cell holding the value of a field */
+td.DwCRecordTable_FieldValue
+{
+  border-collapse: separate;
+  empty-cells: show;
+  text-align: left;
+  vertical-align: top;
+  padding: 0px 2px 0px 2px;
+  background-color: {{ row2_background_color }};
+  font-weight: normal;
+  font-size: 0.95em;
+  overflow: hidden;
+}
+
+td.DwCRecordTable_FieldLabel, td.DwCRecordTable_FieldValue
+{
+  border-style: solid;
+  border-color: black;
+  border-width: 1px 0px 0px 0px;
+}
+
+td.DwCRecordTable_FieldLabel_LeftColumn {
+  border-right-width: 1px;
+}
+td.DwCRecordTable_FieldValue_LeftColumn {
+  border-right-width: 2px;
+}
+td.DwCRecordTable_FieldLabel_RightColumn {
+  border-right-width: 1px;
+}
+td.DwCRecordTable_FieldValue_RightColumn {
+}
+
+/* all cells in the last field/value row */
+td.DwCRecordTable_FirstRecordRowCell {
+  border-top-width: 0px;
+}
+
+/* all cells in the last field/value row */
+td.DwCRecordTable_LastRecordRowCell {
+}
+
+/******************************************************************
+ * DwCRecordsTable Styles
+ ******************************************************************/
 
 table.DwCRecordsTable {
   width: 100%;
   border: 2px solid black;
+  font-size: 12px;
 }
 
 tr.DwCRecordsTable_HeaderRow {
-  background-color: #CCCCFF;
+  background-color: {{ header_background_color }};
 }
 
-.DwCRecordsTable_FieldHeader {
+td,th.DwCRecordsTable_FieldHeader {
+  border-collapse: separate;
+  empty-cells: show;
   -moz-box-sizing: border-box;
   -ms-box-sizing: border-box;
   -webkit-box-sizing: border-box;
@@ -18,33 +161,88 @@ tr.DwCRecordsTable_HeaderRow {
   font-weight: bold;
   text-align: left;
   border-style: solid;
-  border-width: black;
+  border-color: black;
   border-width: 0pc 0px 2px 0px;
+  font-size: 1em;
+}
+
+/* clickable object that sorts the table by a field*/
+.DwCRecordsTable_FieldSorter {
+}
+/* class applied on a mouse hover*/
+.DwCRecordsTable_FieldSorter:hover {
+  font-style: italic;
+  text-decoration: underline;
+}
+.DwCRecordsTable_FieldSorter:hover:before {
+  content: '[';
+}
+.DwCRecordsTable_FieldSorter:hover:after {
+  content: ']';
+}
+
+/* all result rows in the table */
+tr.DwCRecordsTable_ResultRow {
+}
+
+/* only odd-numbered result rows */
+tr.DwCRecordsTable_ResultRow1 {
+  background-color: {{ row1_background_color }};
+}
+
+/* only even-numbered result rows */
+tr.DwCRecordsTable_ResultRow2 {
+  background-color: {{ row2_background_color }};
+}
+
+/* the first result row */
+tr.DwCRecordsTable_FirstResultRow {
+}
+
+/* the last result row */
+tr.DwCRecordsTable_LastResultRow {
+}
+
+/* special cell that holds the row number */
+td.DwCRecordsTable_RowNumValue {
+}
+/* add a period (.) after each row number */
+td.DwCRecordsTable_RowNumValue:after {
+  content: '.';
 }
 
 td.DwCRecordsTable_Value {
+  border-collapse: separate;
+  empty-cells: show;
   -moz-box-sizing: border-box;
   -ms-box-sizing: border-box;
   -webkit-box-sizing: border-box;
   box-sizing: border-box;
   padding: {{ default_padding }}px; 
   text-align: left;
+  font-weight: normal;
+  font-size: 0.95em;
 }
 
-.DwCRecordsTable_FieldSorter {
-  cursor: pointer;
+/* all table cells in the first results row */
+td.DwCRecordsTable_FirstResultRow_Value {
 }
 
-.DwCRecordsTable_ResultRow1 {
-  background-color: #909090;
+/* all table cells in the last results row */
+td.DwCRecordsTable_LastResultRow_Value {
+  border-bottom-width: 0px;
 }
 
-.DwCRecordsTable_ResultRow2 {
-  background-color: white;
+/* each value cell in the first column of the table */
+td.DwCRecordsTable_FirstColumnValue {
+}
+
+/* each value cell in the last column of the table */
+td.DwCRecordsTable_LastColumnValue {
 }
 
 tr.DwCRecordsTable_PagingRow {
-  background-color: #CCCCFF;
+  background-color: {{ header_background_color }};
 }
 
 .DwCRecordsTable_PagingButtonContainer  {
@@ -60,6 +258,26 @@ tr.DwCRecordsTable_PagingRow {
   border-width: 2px 0px 0px 0px;
 }
 
+/* a generic class tagged onto all clickable objects */
+.DwCRecordsTable_ClickObject {
+  cursor: pointer;
+}
+
+/* class applied when clicking on a field value triggers an action */
+.DwCRecordsTable_ClickableValue {
+}
+.DwCRecordsTable_ClickableValue:hover {
+  font-weight: bold;
+  font-style: italic;
+  text-decoration: underline;
+}
+.DwCRecordsTable_ClickableValue:hover:before {
+  content: '[';
+}
+.DwCRecordsTable_ClickableValue:hover:after {
+  content: ']';
+}
+
 .DwCRecordsTable_FooterRow {
   background-color: white;
 }
@@ -68,7 +286,6 @@ tr.DwCRecordsTable_PagingRow {
   display: block;
   margin-left: 2px;
   margin-right: 2px;
-  cursor: pointer;
 }
 
 .DwCRecordsTable_FirstButton,
@@ -104,21 +321,26 @@ tr.DwCRecordsTable_PagingRow {
   right-margin; auto;
 }
 
+
+/******************************************************************
+ * DwCContextMenu Styles
+ ******************************************************************/
+
 div.DwCMenuOverlay
 {
+  /* zIndex should be higher than every element but the context menu */
   z-index: 100;
 }
 
 div.DwCContextMenu
 {
+  /* should be higher than any other zIndex on this page */
   z-index: 101;
   width: 250px;
   background-color: white;
   max-height: 350px;
   min-height: 50px;
-  overflow: -moz-scrollbars-vertical;
-  overflow-y: scroll;
-  overflow-x: hidden;
+  overflow: auto;
   padding: {{ default_padding }}px;
   border-style: ridge;
   border-width: 1px;
@@ -140,7 +362,7 @@ li.DwCContextMenu_GroupHeader
   border-width: 0px 0px 2px 0px;
   list-style-position: inside;
   list-style-type: none;
-  background-color: #E0E0FF;
+  background-color: #CCCCFF;
 }
 
 li.DwCContextMenu_Item {
@@ -155,6 +377,7 @@ li.DwCContextMenu_Item {
   cursor: pointer;
   background-color: white;
 }
+
 
 li.DwCContextMenu_FirstItem
 {
@@ -172,10 +395,16 @@ li.DwCContextMenu_ItemOn
   background-color: #E0E0E0;
 }
 
-li.DwCContextMenu_ItemHover
-{
+/* defined after other row definitions so that it will override them */
+li.DwCContextMenu_Item:hover {
   font-weight: bold;
+  font-style: italic;
   background-color: #C0C0C0;
 }
 
+
 {% endwith %}
+{% endwith %}
+{% endwith %}
+{% endwith %}
+

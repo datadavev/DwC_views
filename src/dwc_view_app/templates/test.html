@@ -12,10 +12,18 @@
 
     $(document).ready(function() {
 
-      // initialize our DwCViewsTable
+      // initialize our DwCRecordTable
+      $("#DwCViews_RecordTable").DwCRecordTable({
+        "gatewayAddress": "",
+        "baseDir": "/gateway/",
+        "recordID": "UAM.Fish.3560."
+      });
+
+      // initialize our DwCRecordsTable
       $("#DwCViews_RecordsTable").DwCRecordsTable({
         "gatewayAddress": "",
-        "baseDir": "/gateway/"
+        "baseDir": "/gateway/",
+        "recordTable": $("#DwCViews_RecordTable").data('DwCRecordTable')
       });
 
     });
@@ -25,9 +33,10 @@
 
 {% block main_content %}
 
-  <table cellpadding="0" cellspacing="0" border="0" id="DwCViews_RecordsTable">
+  <table cellpadding="0" cellspacing="0" border="0" id="DwCViews_RecordTable">
   </table>
 
-  <div id="FieldMenu"></div>
+  <table cellpadding="0" cellspacing="0" border="0" id="DwCViews_RecordsTable">
+  </table>
 
 {% endblock %}
