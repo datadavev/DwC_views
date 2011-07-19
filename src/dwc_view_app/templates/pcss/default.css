@@ -15,7 +15,7 @@ html, body
  * increase the size of the container but instead
  * decreases the available space inside the container
 */
-div, ul
+div, ul, td, th
 {
   -moz-box-sizing: border-box;
   -ms-box-sizing: border-box;
@@ -145,7 +145,7 @@ div.MenuTitle
 {
   width: 100%;
   font-weight: bold;
-  font-style: underline;
+  text-decoration: underline;
   font-size: 14px;
   text-align: center;
   margin: 0px 0px 6px 0px;

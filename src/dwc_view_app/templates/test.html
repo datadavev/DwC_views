@@ -6,25 +6,48 @@
 {% endblock %}
 
 {% block scripts %}
+<script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=false"></script>
   <script type="text/javascript" src="/static/scripts/jquery-1.6.1.min.js"></script>
   <script type="text/javascript" src="/static/scripts/jquery.DwCViews.js"></script>
   <script>
 
-    $(document).ready(function() {
+    jQuery.noConflict();
+    jQuery(document).ready(function() {
 
-      // initialize our DwCRecordTable
-      $("#DwCViews_RecordTable").DwCRecordTable({
-        "gatewayAddress": "",
-        "baseDir": "/gateway/",
-        "recordID": "UAM.Fish.3560."
+      jQuery('#DwCViews').DwCViews({
+        "gatewayAddress": '',
+        "baseDir": '/gateway/',
+        "recordsTableOptions": {
+          "fields": {
+            "id" : {
+              "display": true,
+              "name": "id",
+              "label": "ID"
+            },
+            "sciName_s": {
+              "display": true,
+              "name": "sciName_s",
+              "label": "Species",
+              "click": function(records_table, cell) {
+                alert(cell.text());
+                return false;
+              }
+            },
+            "lng": {
+              "display": true,
+              "name": "lng",
+              "label":"Longitude",
+            },
+            "lat": {
+              "display": true,
+              "name": "lat",
+              "label": "Latitude"
+            }
+          }
+        }
       });
 
-      // initialize our DwCRecordsTable
-      $("#DwCViews_RecordsTable").DwCRecordsTable({
-        "gatewayAddress": "",
-        "baseDir": "/gateway/",
-        "recordTable": $("#DwCViews_RecordTable").data('DwCRecordTable')
-      });
+    jQuery('#DwCMap').DwCMapView({});
 
     });
 
@@ -33,10 +56,7 @@
 
 {% block main_content %}
 
-  <table cellpadding="0" cellspacing="0" border="0" id="DwCViews_RecordTable">
-  </table>
-
-  <table cellpadding="0" cellspacing="0" border="0" id="DwCViews_RecordsTable">
-  </table>
+  <div id="DwCViews"></div>
+  <div id="DwCMap"></div>
 
 {% endblock %}
