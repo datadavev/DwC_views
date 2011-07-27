@@ -14,40 +14,7 @@
     jQuery.noConflict();
     jQuery(document).ready(function() {
 
-      jQuery('#DwCViews').DwCViews({
-        "gatewayAddress": '',
-        "baseDir": '/gateway/',
-        "recordsTableOptions": {
-          "fields": {
-            "id" : {
-              "display": true,
-              "name": "id",
-              "label": "ID"
-            },
-            "sciName_s": {
-              "display": true,
-              "name": "sciName_s",
-              "label": "Species",
-              "click": function(records_table, cell) {
-                alert(cell.text());
-                return false;
-              }
-            },
-            "lng": {
-              "display": true,
-              "name": "lng",
-              "label":"Longitude",
-            },
-            "lat": {
-              "display": true,
-              "name": "lat",
-              "label": "Latitude"
-            }
-          }
-        }
-      });
-
-    jQuery('#DwCMap').DwCMapView({});
+      jQuery('#DwCViews').DwCViews();
 
     });
 
@@ -57,6 +24,5 @@
 {% block main_content %}
 
   <div id="DwCViews"></div>
-  <div id="DwCMap"></div>
 
 {% endblock %}

@@ -32,11 +32,21 @@
      {% endblock %}
     </div>
 
+{% comment %}
     <div id="LeftMenu" class="LeftMenu">
      {% block left_menu %}
      {% include "left_menu.html" %}
      {% endblock %}
     </div>
+{% endcomment %}
+
+{% comment %}
+    <div id="RightMenu" class="RightMenu">
+     {% block right_menu %}
+     {% include "right_menu.html" %}
+     {% endblock %}
+    </div>
+{% endcomment %}
 
     <div id="MainContent" class="MainContent">
      {% block main_content %}

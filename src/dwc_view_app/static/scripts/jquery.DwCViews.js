@@ -1,10 +1,14 @@
 // ******** //
 /*
 TODO:
+   recordTable: hover over value shows whole value as popup (like image popup)
+   recordTable: formatting
    recordsTable: cache field option - per field
    recordsTable: cache fields option - all fields
    recordsTable: special class for active (single record) row
-   recordsTable: onFilter() hook option
+   recordsTable: row number field to be handled in fields array
+   mapView: click on marker shows single record view of that marker
+   mapView: realtime scroll/move/zoom marker querying
    all: various hook options
 */
 // ******** //
@@ -38,10 +42,19 @@ TODO:
       this.fields = this.options.fields;
       this.recordTable = this.options.recordTable;
       this.recordTableOptions = this.options.recordTableOptions;
+      this.viewPicker = this.options.viewPicker;
+      this.viewPickerOptions = this.options.viewPickerOptions;
       this.recordsTable = this.options.recordsTable;
       this.recordsTableOptions = this.options.recordsTableOptions;
+      this.onInit = this.options.onInit;
+      this.onSearch = this.options.onSearch;
 
       setupViews(this);
+
+      // set up an onInit/onLoad hook if an onInit function was defined
+      if (typeof(this.onInit) == 'function') {
+        this.onInit(this);
+      }
 
     }
 
@@ -84,10 +97,16 @@ TODO:
     showToolbar: true,
     recordTable: null,
     recordTableOptions: null,
+    viewPicker: null,
+    viewPickerOptions: null,
     recordsTable: null,
     recordsTableOptions: null,
     mapView: null,
-    mapViewOptions: null
+    mapViewOptions: null,
+    fieldsTable: null,
+    fieldsTableOptions: null,
+    onInit: null,
+    onSearch: null
   };
 
 
@@ -100,9 +119,13 @@ TODO:
     var search_box;
     var search_button;
     var record_table;
+    var view_picker;
     var records_table;
     var map_view;
-    var options = {};
+    var search_options;
+
+    // style-ize the parent element
+    obj.element.addClass('DwCViews');
 
     toolbar = obj.element.find('.DwCViews_Toolbar:last');
     if (toolbar.length == 0) {
@@ -170,7 +193,18 @@ TODO:
     }
 
 
-    /* add a single record table to the suite (if not already present or set to false) */
+    /* add a view picker container before we add the views*/
+    if (obj.viewPicker == null) {
+      view_picker = obj.element.find('div.DwCViewPicker_Container');
+      // if a container does not already exist, add one
+      if (view_picker.length == 0) {
+        view_picker = $('<div class="DwCViewPicker_Container"></div>');
+        obj.element.append(view_picker);
+      }
+    }
+
+
+    /* add a records listing table to the suite (if not already present or set to false) */
     if (obj.recordsTable == null) {
       records_table = obj.element.find('div.DwCRecordsTable_Container');
       if (records_table.length == 0) {
@@ -211,24 +245,264 @@ TODO:
       obj.recordsTable = records_table.data('DwCRecordsTable');
     }
 
-    // bind a record search event when the user presses the 'enter' key
-    // while the textbox is active
-    obj.searchBox.keyup(function(event) {
-      if (event.keyCode == 13) {
-        obj.recordsTable.query = $(this).attr('value');
-        obj.recordsTable.fetchRecords(false);
-      }
-    });
 
-    // set the onClick event to search button
-    if (obj.recordsTable) {
+    /* add a maps view to the suite (if not already present or set to false) */
+    if (obj.mapView == null) {
+      map_view = obj.element.find('div.DwCMapView_Container');
+      if (map_view.length == 0) {
+        map_view = $('<div class="DwCMapView_Container"></div>');
+        obj.element.append(map_view);
+      }
+
+      // if special options were specified, make sure that the the parent
+      // gateway server's options are used (unless overridden)
+      if (map_view.data('DwCMapView') == null) {
+        if (obj.mapViewOptions) {
+          // if no search was supplied in the options, use the DwCViews baseDir
+          if (obj.mapViewOptions['search'] == null) {
+            obj.mapViewOptions['search'] = new $.DwCViews.DwCSearch({
+              'gatwayAddress': obj.gatewayAddress,
+              'baseDir': obj.baseDir
+            });
+          }
+        }
+        // if no options were passed in, set some defaults
+        else {
+          obj.mapViewOptions = {};
+
+          // pass along the baseDir and gatewayAddress
+          search_options = {};
+          search_options['gatewayAddress'] = obj.gatewayAddress;
+          search_options['baseDir'] = obj.baseDir;
+          // pass along any settings from the records table
+          if (obj.recordsTable) {
+            if (obj.recordsTable.query) {
+              search_options['filter'] = obj.recordsTable.query;
+            }
+            if (obj.recordsTable.start) {
+              search_options['start'] = obj.recordsTable.start;
+            }
+            if (obj.recordsTable.count) {
+              search_options['count'] = obj.recordsTable.count;
+            }
+            if (obj.recordsTable.sortBy) {
+              search_options['sortBy'] = obj.recordsTable.sortBy;
+            }
+            if (obj.recordsTable.sortBy) {
+              search_options['sortOrder'] = obj.recordsTable.sortOrder;
+            }
+          }
+
+          // if we have a single record table, set a default onMarkerClick callback
+          // to display a record when you click on its marker
+          obj.mapViewOptions['onMarkerClick'] = function(map_view, marker) {
+            var record_id = marker.get('recordID');
+            if (record_id) {
+              obj.recordTable.setRecordID(marker.get('recordID'), true);
+            }
+          }
+
+          obj.mapViewOptions['search'] =  new $.DwCViews.DwCSearch(search_options);
+        }
+
+        // initialize our record table
+        map_view.DwCMapView(obj.mapViewOptions);
+      }
+
+      obj.mapView = map_view.data('DwCMapView');
+    }
+
+
+    // initialize the view picker (if not already initialized)
+    // now that we have a handle on all of the views
+    if (view_picker.data('DwCViewPicker') == null) {
+      // if no options were passed in, set some defaults
+      if (!obj.viewPicker) {
+        // if no options were passed, create a blank object
+        if (!obj.viewPickerOptions) {
+          obj.viewPickerOptions = {};
+        }
+        // if no buttons were specified in the options, add all of our views
+        if (!obj.viewPickerOptions.hasOwnProperty('buttons')) {
+          obj.viewPickerOptions['buttons'] = {};
+        
+          // if not already present, give the view picker a handle on each
+          // of the various views
+          if (obj.recordsTable) {
+            obj.viewPickerOptions['buttons']['RecordsTableButton'] = {
+              "view": obj.recordsTable
+            };
+          }
+          if (obj.mapView) {
+            obj.viewPickerOptions['buttons']['MapViewButton'] = {
+              "view": obj.mapView,
+              "click": function (view_picker, map_view) {
+                google.maps.event.trigger(map_view.map, 'resize');
+                if (map_view.bounds) {
+                  map_view.map.fitBounds(map_view.bounds);
+                }
+              }
+            };
+          }
+          if (obj.fieldsView) {
+            obj.viewPickerOptions['buttons']['FieldsTableButton'] = {
+              "view": obj.fieldsTable
+            };
+          }
+        }
+      }
+
+      // initialize our view picker
+      view_picker.DwCViewPicker(obj.viewPickerOptions);
+
+      // create an object handle on the view picker
+      obj.viewPicker = view_picker.data('DwCViewPicker');
+    }
+
+    // create an onSearch function, if one was not given
+    // (and we have a view that can search
+    if (!obj.onSearch && (obj.recordsTable || obj.mapView)) {
+
+      // create a callback function that triggers a search on all of our views
+      obj.onSearch = function(filter, dwc_views) {
+
+        // if the dwc_views object has a records table
+        if (dwc_views.recordsTable) {
+          dwc_views.recordsTable.search.filter = dwc_views.searchBox.attr('value');
+          dwc_views.recordsTable.fetchRecords(false);
+        }
+
+        // likewise if the dwc_views object has a map view
+        if (dwc_views.mapView) {
+          dwc_views.mapView.search.filter = dwc_views.searchBox.attr('value');
+          dwc_views.mapView.doSearch(dwc_views.mapView.search, false);
+        }
+      }
+    }
+
+
+    // if we have an onClick callback function, bind it to the search hooks
+    if (typeof(obj.onSearch) == 'function') {
+
+      // bind a record search event when the user presses the 'enter' key
+      // while the textbox is active
+      obj.searchBox.keyup(function(event) {
+        if (event.keyCode == 13) {
+          obj.onSearch(obj.searchBox.attr('value'), obj);
+        }
+      });
+
+      // set the onClick event to search button
       obj.searchButton.click(function () {
-        obj.recordsTable.query = obj.searchBox.attr('value');
-        obj.recordsTable.fetchRecords(false);
+        obj.onSearch(obj.searchBox.attr('value'), obj);
+      });
+    }
+  }
+
+
+
+
+
+  /***************************************************************************
+   * DwCSearch - represents a search/query in the Darwin Core Database
+   ***************************************************************************/
+
+  $.DwCViews.DwCSearch = function(options) {
+
+    this.options = $.extend({}, $.DwCViews.DwCSearch.defaultOptions, options);
+
+    this.gatewayAddress = this.options.gatewayAddress;
+    this.baseDir = this.options.baseDir;
+    this.filter = this.options.filter;
+    this.fields = this.options.fields;
+    this.start = this.options.start;
+    this.count = this.options.count;
+    this.sortBy = this.options.sortBy;
+    this.sortOrder = this.options.sortOrder;
+    this.callback = this.options.callback;
+
+    this.data = null;
+
+    this.baseURL = this.gatewayAddress + this.baseDir;
+
+    this.doSearch = function(options) {
+      var obj = this;
+      var callback;
+      if (typeof(options.callback) == 'function') {
+        callback = options.callback;
+      } else {
+        callback = this.callback;
+      }
+
+      // if we are able to use the cache, do so
+      if (options.cache && this.data != null) {
+        return callback(data);
+      }
+      // if not, do an actual query
+      else {
+        var url = this.prepareRecordsUrl(options);
+        $.getJSON(url, function(data) {
+          obj.data = data;
+          return callback(data);
+        });
+      }
+    }
+
+    // prepares the URL and its options
+    this.prepareRecordsUrl = function(options) {
+      var params = {};
+
+      // build our URL paramaters, looking first at options, then
+      // at the object's settings
+      if (options.filter) { params["filter"] = options.filter; }
+      else if (this.filter) { params["filter"] = this.filter; }
+
+      if (options.start) { params["start"] = options.start; }
+      else if (this.start) { params["start"] = this.start; }
+
+      if (options.count) { params["count"] = options.count; }
+      else if (this.count) { params["count"] = this.count; }
+
+      // field_string will take precedence over a field array
+      if (options.fieldString) { params["fields"] = options.fieldString; }
+      else if (this.fieldString) { params["fields"] = this.fields_string; }
+      else if (options.fields) { params["fields"] = this.prepareFieldString(options.fields); }
+      else if (this.fields) { params["fields"] = this.prepareFieldString(this.fields); }
+
+      if (options.sortBy) { params["orderby"] = options.sortBy; }
+      else if (this.sortBy) { params["orderby"] = this.sortBy; }
+
+      if (options.sortOrder) { params["order"] = options.sortOrder; }
+      else if (this.sortOrder) { params["order"] = this.sortOrder; }
+
+      return this.baseURL + "records?" + $.param(params);
+    }
+
+
+    this.prepareFieldString = function(fields) {
+      var fields_string = ""
+      $.each(fields, function(i, field) {
+        if (fields_string != "") {
+          fields_string += ",";
+        }
+        fields_string += field;
       });
     }
 
   }
+
+  $.DwCViews.DwCSearch.defaultOptions = {
+    gatewayAddress: "",
+    baseDir: "/",
+    filter: null,
+    fields: null,
+    start: 0,
+    count: 25,
+    sortBy: null,
+    sortOrder: null,
+    callback: function(data) { return data; }
+  }
+
 
 
 
@@ -578,20 +852,17 @@ TODO:
       var obj = this; // extra handle for callback functions
 
       this.element = element;
-      this.recordsTable = null;
-      this.start = this.options.start;
-      this.count = this.options.count;
+      this.search = this.options.search;
       this.fields = this.options.fields;
       this.fields_string = prepareFieldsString(this.options.fields);
-      this.sortBy = this.options.defaultSortBy;
-      this.sortOrder = this.options.defaultSortOrder;
       this.displayRowNums = this.options.displayRowNums;
       this.globalDefaultValue = this.options.globalDefaultValue;
       this.recordTable = this.options.recordTable;
       this.idField = this.options.idField;
-      this.rowClick = this.options.rowClick;
+      this.onInit = this.options.onInit;
+      this.onSearch = this.options.onSearch;
+      this.onRowClick = this.options.onRowClick;
       this.total = 0;
-      this.data = null;
       this.db_fields = null;
       this.field_menu = null;
       this.overlay = null;
@@ -619,6 +890,11 @@ TODO:
         return false;
       });
 
+      // create an "onInit" hook (look to see if an onInit() function has been defined)
+      if (typeof(this.onInit) == 'function') {
+        obj.onInit(obj);
+      }
+
     };
 
 
@@ -630,10 +906,10 @@ TODO:
     this.updateLabel = function(data) {
       var label = "Showing Results: ";
       label += (data.start + 1) + " - ";
-      if ((data.start + this.count) > this.total) {
+      if ((data.start + this.search.count) > this.total) {
         label += (this.total) + " ";
       } else {
-        label += (data.start + this.count) + " ";
+        label += (data.start + this.search.count) + " ";
       }
       label += " (" + data.numFound + " total)";
       this.element.find(".DwCRecordsTable_PagingInfo").text(label);
@@ -661,13 +937,13 @@ TODO:
         }
 
         // if the row should be clickable
-        if (obj.rowClick != null) {
+        if (obj.onRowClick != null) {
           // set special classes
           row.addClass('DwCRecordsTable_ClickableObject');
           row.addClass('DwCRecordsTable_ClickableRow');
           // bind the click function
           row.click(function() {
-            obj.rowClick(obj, $(this));
+            obj.onRowClick(obj, $(this));
           });
         }
 
@@ -682,7 +958,7 @@ TODO:
           // add a special css class to identify it as a first-column cell
           cell.addClass('DwCRecordsTable_FirstColumnValue');
           is_first_column = false;
-          cell.text((i + obj.start + 1).toString());
+          cell.text((i + obj.search.start + 1).toString());
           row.append(cell);
         }
 
@@ -749,24 +1025,33 @@ TODO:
     // fetch data from the Darwin Core database (if not already cached)
     // cached=false will ignore any existing cache and overwrite it
     this.fetchRecords = function(cached) {
-      var url = prepareRecordsUrl(this);
       var obj = this; // object handler for callback functions
 
-      // default value for the 'cached' parameter
+      // default value for the 'cached' parameter (false)
       cached = typeof(cached) != 'undefined'? cached : false;
 
-      // clear existing data cache
-      if (cached && this.data != null) {
+      // use the existing data cache, if requested (and it exists)
+      if (cached && this.search.data != null) {
         this.refreshData(this.data);
+        // create a hook for the 'onSearch' event
+        if (typeof(obj.onSearch) == 'function') {
+          obj.onSearch(obj);
+        }
       }
       // fetch data
       else {
-        $.getJSON(url, function(data) {
-          // cache the data
-          obj.data = data;
-          obj.refreshData(data);
+        this.search.doSearch({
+          'fields_string': this.fields_string,
+          'callback': function(data) {
+            obj.refreshData(data);
+            // create a hook for the 'onSearch' event
+            if (typeof(obj.onSearch) == 'function') {
+              obj.onSearch(obj);
+            }
+          }
         });
       }
+
     }
 
 
@@ -829,8 +1114,8 @@ TODO:
 
     // get the next record results page
     this.nextPage = function() {
-      if ((this.start + this.count) < this.total) {
-        this.start = this.start + this.count;
+      if ((this.search.start + this.search.count) < this.total) {
+        this.search.start = this.search.start + this.search.count;
         this.fetchRecords(false);
       }
     }
@@ -838,8 +1123,8 @@ TODO:
 
     // get the next record results page
     this.prevPage = function() {
-      if ((this.start - this.count) >= 0) {
-        this.start = this.start - this.count;
+      if ((this.search.start - this.search.count) >= 0) {
+        this.search.start = this.search.start - this.search.count;
         this.fetchRecords(false);
       }
     }
@@ -847,7 +1132,7 @@ TODO:
 
     // get the first record results page
     this.firstPage = function() {
-      this.start = 0;
+      this.search.start = 0;
       this.fetchRecords(false);
     }
 
@@ -856,7 +1141,7 @@ TODO:
     this.lastPage = function() {
       if (this.total > this.count) {
         // determine the last page's starting record
-        this.start = (this.total - (this.total % this.count));
+        this.search.start = (this.total - (this.total % this.search.count));
         this.fetchRecords(false);
       }
     }
@@ -889,18 +1174,22 @@ TODO:
   // default plugin options
   $.DwCRecordsTable.defaultOptions = {
     loadOnInit: true,
-    gatewayAddress: "",
-    baseDir: "/gateway/",
-    query: null,
-    start: 0,
-    count: 25,
-    defaultSortBy: null,
-    defaultSortOrder: "asc",
+    search: new $.DwCViews.DwCSearch({
+      'gatewayAddress': '',
+      'baseDir': '/gateway/',
+      'filter': null,
+      'start': 0,
+      'count': 25,
+      'sortBy': null,
+      'sortOrder': 'asc'
+    }),
     displayRowNums: true,
     globalDefaultValue: '',
     recordTable: null,
     idField: 'id',
-    rowClick: function(records_table, row) {
+    onInit: null,
+    onSearch: null,
+    onRowClick: function(records_table, row) {
       // this click will do nothing if there is no associated record table
       if (records_table.recordTable != null) {
         id = row.attr('dwcrecordstable_recordid');
@@ -933,7 +1222,7 @@ TODO:
 
 
   /***************************************************************************
-   * DwCContextMenu - Begin Private Functions
+   * DwCRecordsTable - Begin Private Functions
    ***************************************************************************/
 
   // style-ize elements and add table
@@ -1107,19 +1396,6 @@ TODO:
   }
 
 
-  // prepares the URL and its options
-  function prepareRecordsUrl(obj) {
-    var params = {};
-    if (obj.query) { params["filter"] = obj.query; }
-    if (obj.start) { params["start"] = obj.start; }
-    if (obj.count) { params["count"] = obj.count; }
-    if (obj.fields_string) { params["fields"] = obj.fields_string; }
-    if (obj.sortBy) { params["orderby"] = obj.sortBy; }
-    if (obj.sortOrder) { params["order"] = obj.sortOrder; }
-    return obj.baseURL + "records?" + $.param(params);
-  }
-
-
   // sort fields by their display order
   function sortFields(fields) {
     var sorted_fields = {};
@@ -1239,6 +1515,7 @@ TODO:
 
 
 
+
   /***************************************************************************
    * DwCMapView
    *
@@ -1261,13 +1538,26 @@ TODO:
       // create a handle on the DOM element
       this.element = element;
 
-      this.map = null;
+      this.map = null; // the actual google maps object
+      this.search = this.options.search;
+      this.idField = this.options.idField;
+      this.latitudeField = this.options.latitudeField;
+      this.longitudeField = this.options.longitudeField;
+      this.titleField = this.options.titleField;
       this.recordsTable = this.options.recordsTable;
+      this.maxRecords = this.options.maxRecords;
       this.zoom = this.options.zoom;
       this.mapTypeId = this.options.mapTypeId;
       this.center = this.options.center;
+      this.overlays = this.options.overlays;
+      this.onMarkerClick = this.options.onMarkerClick;
+      this.autoCenter = this.options.autoCenter;
+      this.bounds = null;
 
       setupMapView(this);
+
+      // perform our search and place markers on the map
+      if (this.search) { this.doSearch(this.search); }
 
     }
 
@@ -1276,7 +1566,136 @@ TODO:
    * DwCMapView - Begin Public Functions
    ***************************************************************************/
 
-   // this.pubFunction = function() {}
+     // add a marker (icon) to the map
+     this.addMarker = function(key, options, values, display) {
+       var obj = this;
+       var marker = new google.maps.Marker(options);
+
+       // if not display boolean is passed, default to true
+       display = typeof('display') != 'undefined'? display : true; 
+
+       // if any values were passed, add them to the marker's values
+       if (values) {
+         marker.setValues(values);
+       }
+
+       // if a marker click callback function has been defined
+       if (typeof(obj.onMarkerClick) == 'function') {
+         // set the 'click' event to the callback
+         google.maps.event.addListener(marker, 'click', function() {
+           obj.onMarkerClick(obj, marker);
+         });
+       }
+
+       // add this marker to our array of all markers/overlays
+       this.overlays[key] = marker;
+
+       // show the new marker on the map (if requested)
+       if (display) {
+         marker.setMap(this.map);
+       }
+     }
+
+
+     // makes sure that all markers in the "overlays" array
+     // have been made visible on the map
+     this.displayOverlays = function() {
+       var obj = this;
+
+       $.each(this.overlays, function(key, overlay) {
+         overlay.setMap(obj.map)
+       });
+     }
+
+
+     // hide all icons on the map and clear out all of
+     // the icons from the overlays array
+     this.deleteOverlays = function() {
+       var obj = this;
+
+       $.each(this.overlays, function(key, overlay) {
+         overlay.setMap(null)
+       });
+
+       this.overlays = {};
+     }
+
+
+     // takes the results of a DwCSearch and places a
+     // the resulting records' corresponding markers on
+     // the map
+     this.loadMarkers = function(data, center) {
+       var obj = this;
+       this.bounds = new google.maps.LatLngBounds();
+
+       // default values
+       center = typeof(center) != 'undefined'? center : true;
+
+       $.each(data.docs, function(i, record) {
+         var lat;
+         var lng;
+         var marker_options;
+         var marker_values;
+
+         lat = record[obj.latitudeField];
+         lng = record[obj.longitudeField];
+
+         // check to make sure that lat and lng are valid numbers
+         if (isNumeric(lat) && isNumeric(lng)) {
+           lat = parseFloat(lat);
+           lng = parseFloat(lng);
+
+           // check to make sure that the lat and lng values have valid ranges
+           if (lat <= 90 && lat >= -90 && lng <= 180 && lng >= -180) {
+
+             marker_options = {};
+             marker_options['position'] = new google.maps.LatLng(lat, lng);
+
+             // if the title field is present, use its value as the marker title
+             if (obj.titleField && obj.titleField in record) {
+               marker_options['title'] = record[obj.titleField].toString();
+             }
+
+             // add the recordID to the metadata
+             marker_values = {'recordID': record[obj.idField]}
+
+             // add the marker to our mapView and tell it to display itself
+             obj.addMarker(record[obj.idField], marker_options, marker_values, true);
+
+             // add the coordinance to be considered when zooming/centering the map
+             obj.bounds.extend(marker_options['position']);
+           }
+           
+         }
+       });
+
+       // if center == true, center/zoom the map based on the new set of markers
+       if (center) {
+         this.map.fitBounds(this.bounds);
+       }
+     }
+
+
+     // takes a DwcSearch object and displays the records
+     // returned from the search on the map
+     this.doSearch = function(search, cached) {
+       var obj = this;
+
+       // set some default values
+       search = typeof(search) != 'undefined'? search : this.search;
+       cached = typeof(cached) != 'undefined'? cached : false;
+
+       // clear any existing markers
+       this.deleteOverlays();
+
+       search.doSearch({
+         'count': obj.maxRecords, 
+         'fieldString': obj.idField + "," + obj.latitudeField + ',' + obj.longitudeField + ',' + obj.titleField, 
+         'callback': function(data) {
+           obj.loadMarkers(data)
+         }
+       });
+     }
 
 
   /***************************************************************************
@@ -1305,9 +1724,18 @@ TODO:
 
   $.DwCMapView.defaultOptions = {
     recordsTable: null,
-    zoom: 4,
+    search: null,
+    idField: 'id',
+    latitudeField: 'lat',
+    longitudeField: 'lng',
+    titleField: 'sciName_s',
+    maxRecords: 1000,
+    overlays: {},
+    zoom: 0,
     center: new google.maps.LatLng(0,0),
-    mapTypeId: google.maps.MapTypeId.ROADMAP
+    autoCenter: true,
+    mapTypeId: google.maps.MapTypeId.ROADMAP,
+    onMarkerClick: null
   };
 
 
@@ -1329,7 +1757,181 @@ TODO:
 
     // initialize the map
     obj.map = new google.maps.Map(obj.element[0], map_options);
+  }
 
+
+
+
+  /***************************************************************************
+   * DwCViewPicker
+   *
+   * a little bar that lets you switch between the different views
+   * (i.e. recordsTable, mapView, fieldsView)
+   ***************************************************************************/
+
+  $.DwCViewPicker = function(element, options) {
+
+    this.options = {};
+
+    element.data('DwCViewPicker', this);
+
+    this.init = function(element, options) {
+
+      this.options = $.extend({}, $.DwCViewPicker.defaultOptions, options);
+      this.element = element;
+
+      this.defaultView = this.options.defaultView
+      this.buttons = this.options.buttons;
+
+      setupPicker(this);
+
+    }
+
+
+  /***************************************************************************
+   * DwCViewPicker - Begin Public Functions
+   ***************************************************************************/
+
+    // add a button, or update the button settings if it
+    // already exists
+    this.setButton = function(button_name, button_info) {
+      if (this.buttons.hasOwnProperty(button_name)) {
+        var button = this.element.find('.DwCViewPicker_' + button_name);
+
+        // keep any old options (that are not being overridden)
+        this.buttons[button_name] = $.extend({}, this.buttons[button_name], button_info);
+
+        if (button.length != 0) {
+          // unbind the click event
+          button.unbind('click');
+        
+          // bind the new (or same) click event if one is specified
+          this.bindButtonClick(this, button, button_name, button_info);
+        }
+      }
+    }
+
+    // show the given view (identified by its button name)
+    // and hide all other views
+    this.showView = function(view_name) {
+      // loop through each button hiding/showing the appropriate view(s)
+      $.each(this.buttons, function(name, button_info) {
+        var view = button_info['view'];
+
+        if (view) {
+          // show the specified view
+          if (name == view_name) {
+            view.element.show();
+          }
+          // hide all other views
+          else {
+            view.element.hide();
+          }
+        }
+      });
+    }
+
+
+  /***************************************************************************
+   * DwCViewPicker - Final Initialization Call
+   ***************************************************************************/
+
+    this.init(element, options);
+
+  };
+
+
+  /***************************************************************************
+   * DwCViewPicker - Namespace Declaration
+   ***************************************************************************/
+
+  $.fn.DwCViewPicker = function(options) {
+    return this.each(function() {
+      (new $.DwCViewPicker($(this), options));
+    });
+  };
+
+
+  /***************************************************************************
+   * DwCViewPicker - Default Options
+   ***************************************************************************/
+
+  $.DwCViewPicker.defaultOptions = {
+    defaultView: "RecordsTableButton",
+    buttons: {
+      "RecordsTableButton": {
+        "view": null 
+      },
+      "MapViewButton": {
+        "view": null,
+        "click": function (view_picker, map_view) {
+          if (map_view) {
+            google.maps.event.trigger(map_view.map, 'resize');
+          }
+          return false;
+        }
+      },
+      "FieldsViewButton": {
+        "view": null
+      }
+    }
+  };
+
+
+  /***************************************************************************
+   * DwCViewPicker - Begin Private Functions
+   ***************************************************************************/
+
+  function setupPicker(obj) {
+
+    // style-ize the container
+    obj.element.addClass('DwCViewPicker_Container');
+
+    // add our buttons (as defined by the "buttons" option)
+    $.each(obj.buttons, function(name, button_info) {
+      var button = $('<div></div>');
+
+      // add the generic button class
+      button.addClass('DwCViewPicker_Button');
+      // add a unique button class
+      button.addClass('DwCViewPicker_' + name);
+
+      // add click events
+      bindButtonClick(obj, button, name, button_info);
+
+      // add the button to the container
+      obj.element.append(button);
+    });
+
+    // initially, show only the default view, hide all others
+    if (obj.buttons &&
+        obj.defaultView &&
+        obj.buttons.hasOwnProperty(obj.defaultView)) {
+      obj.showView(obj.defaultView);
+    }
+    // if there is no default, or if the default doesn't exist
+    // simpy show the first one that was defined
+    else {
+      if (obj.buttons) {
+        $.each(obj.buttons, function(name, button_info) {
+          obj.showView(name);
+          return false;
+        });
+      }
+    }
+    
+  }
+
+  function bindButtonClick(obj, button, button_name, button_info) {
+    button.click(function() {
+      // show the corresponding view and hide the other views
+      obj.showView(button_name);
+
+      // if a click function has been defined
+      if (typeof(button_info['click']) == 'function') {
+          button_info['click'](obj, button_info['view']);
+      }
+    });
   }
 
 
@@ -1566,6 +2168,12 @@ TODO:
 
     overlay.appendTo(document.body);
     return overlay;
+  }
+
+
+  // returns "true" if the value is numeric, false if not
+  function isNumeric(n) {
+    return !isNaN(parseFloat(n)) && isFinite(n);
   }
 
 })(jQuery);

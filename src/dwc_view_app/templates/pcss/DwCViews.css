@@ -10,9 +10,14 @@
 /* the top-level parent container for the DwC Views Suite plugin */
 div.DwCViews
 {
-  font-size: 12px;
+  font-size: 10px;
   width: 100%;
-  overflow: hidden;
+  overflow: visible;
+  border-style: solid;
+  border-color: #000000;
+  border-width: 2px;
+  background-color: #ffffff;
+  font-size: 10.5pt;
 }
 
 .DwCViews_Toolbar
@@ -20,7 +25,7 @@ div.DwCViews
   width: 100%;
   border-style: solid;
   border-color: #000000;
-  border-width: 2px 2px 0px 2px;
+  border-width: 0px 0px 2px 0px;
   background-color: #C0C0C0;
   overflow: hidden;
   display: inline-block;
@@ -33,6 +38,7 @@ input.DwCViews_SearchBox
 {
   width: 500px;
   float: right;
+  font-size: 9pt;
 }
 
 div.DwCViews_SearchButton
@@ -43,6 +49,9 @@ div.DwCViews_SearchButton
 }
 div.DwCViews_SearchButton:after
 {
+  font-size: 0.9em;
+  font-weight: bold;
+  font-family: sans-serif;
   content: '[@]';
 }
 
@@ -58,31 +67,37 @@ div.DwCViews_ViewSelector
  ******************************************************************/
 
 /* a <div> tag wrapped around the actual table */
-div.DwCRecordTable_Container {
+div.DwCRecordTable_Container
+{
   width: 100%;
   border-style: solid;
   border-color: black;
   border-width: 2px 2px 0px 2px;
-  overflow: auto;
-  font-size: 12px;
   float: left;
+  overflow: hidden;
+  clear: both;
 }
 
 /* the actual DwCRecordTable <table> */
-table.DwCRecordTable {
+table.DwCRecordTable
+{
   width: 100%;
   background-color: #ffffff;
+  font-size: 10.5pt;
 }
 
-.DwCRecordTable_ClickableObject {
+.DwCRecordTable_ClickableObject
+{
   cursor: pointer;
 }
 
-tr.DwCRecordTable_ControlRow {
+tr.DwCRecordTable_ControlRow
+{
   background-color: {{ header_background_color }};
 }
 
-th,td.DwCRecordTable_ControlsContainer {
+th,td.DwCRecordTable_ControlsContainer
+{
   padding: 2px;
   vertical-align: middle;
   border-style: solid;
@@ -93,23 +108,34 @@ th,td.DwCRecordTable_ControlsContainer {
 /* the table's "hide" button:
  * set 'display: none;' to hide this globally, can also be hidden
  * by passing at 'showHideButton: false' in the plugin options */
-.DwCRecordTable_HideButton {
+.DwCRecordTable_HideButton
+{
   float: right;
   margin: 0px 2px 0px 2px;
 }
-.DwCRecordTable_HideButton:after {
-  content: '[X]';
+.DwCRecordTable_HideButton:after
+{
+  font-size: 0.9em;
+  font-weight: bold;
+  font-family: sans-serif;
+  content: "[X]";
 }
 
-div.DwCRecordTable_SearchButton {
+div.DwCRecordTable_SearchButton
+{
   float: left;
   margin: 0px 2px 0px 2px;
 }
-div.DwCRecordTable_SearchButton:after {
+div.DwCRecordTable_SearchButton:after
+{
+  font-size: 0.9em;
+  font-weight: bold;
+  font-family: sans-serif;
   content: "[@]";
 }
 
-input.DwCRecordTable_SearchBox {
+input.DwCRecordTable_SearchBox
+{
   float: left;
   margin: 0px 2px 0px 2px;
   width: 150px;
@@ -120,18 +146,22 @@ tr.DwCRecordTable_RecordRow
 {
 }
 
-tr.DwCRecordTable_FirstRecordRow {
+tr.DwCRecordTable_FirstRecordRow
+{
 }
 
-tr.DwCRecordTable_LastRecordRow {
+tr.DwCRecordTable_LastRecordRow
+{
 }
 
 /* even-numbered field/value rows */
-tr.DwCRecordTable_RecordRow1 {
+tr.DwCRecordTable_RecordRow1
+{
 }
 
 /* odd-numbered field/value rows */
-tr.DwCRecordTable_RecordRow2 {
+tr.DwCRecordTable_RecordRow2
+{
 }
 
 /* cell holding the name of a field */
@@ -139,18 +169,21 @@ td.DwCRecordTable_FieldLabel
 {
   border-collapse: separate;
   empty-cells: show;
-  font-weight: bold;
   text-align: left;
   vertical-align: top;
   padding: 0px 2px 0px 2px;
-  font-size: 1em;
+  font-family: arial, serif;
+  font-weight: bold;
+  font-size: 0.80em;
   background-color: {{ row1_background_color }};
 }
 /* show a colon after each field label */
-td.DwCRecordTable_FieldLabel:after {
+td.DwCRecordTable_FieldLabel:after
+{
   content: ":";
 }
-td.DwCRecordTable_FieldLabel:empty:after {
+td.DwCRecordTable_FieldLabel:empty:after
+{
   content: "";
 }
 
@@ -163,8 +196,9 @@ td.DwCRecordTable_FieldValue
   vertical-align: top;
   padding: 0px 2px 0px 2px;
   background-color: {{ row2_background_color }};
+  font-family: times, serif;
   font-weight: normal;
-  font-size: 0.95em;
+  font-size: 0.75em;
   overflow: hidden;
 }
 
@@ -175,25 +209,31 @@ td.DwCRecordTable_FieldLabel, td.DwCRecordTable_FieldValue
   border-width: 1px 0px 0px 0px;
 }
 
-td.DwCRecordTable_FieldLabel_LeftColumn {
+td.DwCRecordTable_FieldLabel_LeftColumn
+{
   border-right-width: 1px;
 }
-td.DwCRecordTable_FieldValue_LeftColumn {
+td.DwCRecordTable_FieldValue_LeftColumn
+{
   border-right-width: 2px;
 }
-td.DwCRecordTable_FieldLabel_RightColumn {
+td.DwCRecordTable_FieldLabel_RightColumn
+{
   border-right-width: 1px;
 }
-td.DwCRecordTable_FieldValue_RightColumn {
+td.DwCRecordTable_FieldValue_RightColumn
+{
 }
 
 /* all cells in the last field/value row */
-td.DwCRecordTable_FirstRecordRowCell {
+td.DwCRecordTable_FirstRecordRowCell
+{
   border-top-width: 0px;
 }
 
 /* all cells in the last field/value row */
-td.DwCRecordTable_LastRecordRowCell {
+td.DwCRecordTable_LastRecordRowCell
+{
 }
 
 /******************************************************************
@@ -201,25 +241,32 @@ td.DwCRecordTable_LastRecordRowCell {
  ******************************************************************/
 
 /* a <div> tag wrapped around the actual table */
-div.DwCRecordsTable_Container {
-  width: 100%;
+div.DwCRecordsTable_Container
+{
+  width: auto;
+  margin: auto;
   font-size: 12px;
   border-style: solid;
   border-color: black;
   border-width: 2px;
-  float: left;
+  overflow: hidden;
+  clear: right;
 }
 
-table.DwCRecordsTable {
+/* the actual table */
+table.DwCRecordsTable
+{
   width: 100%;
-  font-size: 12px;
+  font-size: 10.5pt;
 }
 
-tr.DwCRecordsTable_HeaderRow {
+tr.DwCRecordsTable_HeaderRow
+{
   background-color: {{ header_background_color }};
 }
 
-td,th.DwCRecordsTable_FieldHeader {
+td,th.DwCRecordsTable_FieldHeader
+{
   border-collapse: separate;
   empty-cells: show;
   -moz-box-sizing: border-box;
@@ -227,60 +274,73 @@ td,th.DwCRecordsTable_FieldHeader {
   -webkit-box-sizing: border-box;
   box-sizing: border-box;
   padding: {{ default_padding }}px;
-  font-weight: bold;
   text-align: left;
   border-style: solid;
   border-color: black;
   border-width: 0pc 0px 2px 0px;
-  font-size: 1em;
+  font-family: arial, sans-serif;
+  font-weight: bold;
+  font-size: 0.95em;
 }
 
 /* clickable object that sorts the table by a field*/
-.DwCRecordsTable_FieldSorter {
+.DwCRecordsTable_FieldSorter
+{
 }
 /* class applied on a mouse hover*/
-.DwCRecordsTable_FieldSorter:hover {
+.DwCRecordsTable_FieldSorter:hover
+{
   font-style: italic;
   text-decoration: underline;
 }
 
 /* all result rows in the table */
-tr.DwCRecordsTable_ResultRow {
+tr.DwCRecordsTable_ResultRow
+{
 }
 
-tr.DwCRecordsTable_ClickableRow {
+tr.DwCRecordsTable_ClickableRow
+{
 }
-tr.DwCRecordsTable_ClickableRow:hover {
+tr.DwCRecordsTable_ClickableRow:hover
+{
   background-color: gray;
 }
 
 /* only odd-numbered result rows */
-tr.DwCRecordsTable_ResultRow1 {
+tr.DwCRecordsTable_ResultRow1
+{
   background-color: {{ row1_background_color }};
 }
 
 /* only even-numbered result rows */
-tr.DwCRecordsTable_ResultRow2 {
+tr.DwCRecordsTable_ResultRow2
+{
   background-color: {{ row2_background_color }};
 }
 
 /* the first result row */
-tr.DwCRecordsTable_FirstResultRow {
+tr.DwCRecordsTable_FirstResultRow
+{
 }
 
 /* the last result row */
-tr.DwCRecordsTable_LastResultRow {
+tr.DwCRecordsTable_LastResultRow
+{
 }
 
 /* special cell that holds the row number */
-td.DwCRecordsTable_RowNumValue {
+td.DwCRecordsTable_RowNumValue
+{
 }
 /* add a period (.) after each row number */
-td.DwCRecordsTable_RowNumValue:after {
+td.DwCRecordsTable_RowNumValue:after
+{
   content: '.';
 }
 
-td.DwCRecordsTable_Value {
+td.DwCRecordsTable_Value
+{
   border-collapse: separate;
   empty-cells: show;
   -moz-box-sizing: border-box;
@@ -289,32 +349,39 @@ td.DwCRecordsTable_Value {
   box-sizing: border-box;
   padding: {{ default_padding }}px; 
   text-align: left;
+  font-family: times, serif;
   font-weight: normal;
-  font-size: 0.95em;
+  font-size: 0.85em;
 }
 
 /* all table cells in the first results row */
-td.DwCRecordsTable_FirstResultRow_Value {
+td.DwCRecordsTable_FirstResultRow_Value
+{
 }
 
 /* all table cells in the last results row */
-td.DwCRecordsTable_LastResultRow_Value {
+td.DwCRecordsTable_LastResultRow_Value
+{
   border-bottom-width: 0px;
 }
 
 /* each value cell in the first column of the table */
-td.DwCRecordsTable_FirstColumnValue {
+td.DwCRecordsTable_FirstColumnValue
+{
 }
 
 /* each value cell in the last column of the table */
-td.DwCRecordsTable_LastColumnValue {
+td.DwCRecordsTable_LastColumnValue
+{
 }
 
-tr.DwCRecordsTable_PagingRow {
+tr.DwCRecordsTable_PagingRow
+{
   background-color: {{ header_background_color }};
 }
 
-.DwCRecordsTable_PagingButtonContainer  {
+.DwCRecordsTable_PagingButtonContainer
+{
   -moz-box-sizing: border-box;
   -ms-box-sizing: border-box;
   -webkit-box-sizing: border-box;
@@ -322,66 +389,148 @@ tr.DwCRecordsTable_PagingRow {
   padding: {{ default_padding }}px;
   font-weight: bold;
   text-align: center;
+  vertical-align: middle;
   border-style: solid;
   border-color: black;
   border-width: 2px 0px 0px 0px;
 }
 
 /* a generic class tagged onto all clickable objects */
-.DwCRecordsTable_ClickableObject {
+.DwCRecordsTable_ClickableObject
+{
   cursor: pointer;
 }
 
 /* class applied when clicking on a field value triggers an action */
-.DwCRecordsTable_ClickableValue {
+.DwCRecordsTable_ClickableValue
+{
 }
-.DwCRecordsTable_ClickableValue:hover {
+.DwCRecordsTable_ClickableValue:hover
+{
   font-style: italic;
   text-decoration: underline;
   color: blue;
 }
 
-.DwCRecordsTable_FooterRow {
+.DwCRecordsTable_FooterRow
+{
   background-color: white;
 }
 
-.DwCRecordsTable_FloatButton {
+.DwCRecordsTable_FloatButton
+{
   display: block;
   margin-left: 2px;
   margin-right: 2px;
 }
 
 .DwCRecordsTable_FirstButton,
-.DwCRecordsTable_PrevButton {
+.DwCRecordsTable_PrevButton
+{
   float: left;
 }
 
-.DwCRecordsTable_FirstButton:before {
+.DwCRecordsTable_FirstButton:before
+{
+  font-size: 0.95em;
+  font-weight: bold;
+  font-family: sans-serif;
   content: "[<<]";
 }
 
-.DwCRecordsTable_PrevButton:before {
+.DwCRecordsTable_PrevButton:before
+{
+  font-size: 0.95em;
+  font-weight: bold;
+  font-family: sans-serif;
   content: "[<-]";
 }
 
-.DwCRecordsTable_NextButton:before {
+.DwCRecordsTable_NextButton:before
+{
+  font-size: 0.95em;
+  font-weight: bold;
+  font-family: sans-serif;
   content: "[->]";
 }
 
-.DwCRecordsTable_LastButton:before {
+.DwCRecordsTable_LastButton:before
+{
+  font-size: 0.95em;
+  font-weight: bold;
+  font-family: sans-serif;
   content: "[>>]";
 }
 
 .DwCRecordsTable_LastButton,
-.DwCRecordsTable_NextButton {
+.DwCRecordsTable_NextButton
+{
+  font-size: 0.95em;
+  font-weight: bold;
+  font-family: sans-serif;
   float: right;
 }
 
 .DwCRecordsTable_PagingInfo
 {
+  font-size: 0.9em;
+  font-weight: bold;
+  font-family: sans-serif;
   width: auto;
   margin-left: auto;
   margin-right: auto;
+}
+
+
+/******************************************************************
+ * DwCViewPicker Styles
+ ******************************************************************/
+
+div.DwCViewPicker_Container
+{
+  width: 29px;
+  padding: 2px;
+  text-align: center;
+  float: left;
+}
+
+div.DwCViewPicker_Button
+{
+  width: 25px;
+  margin: 4px auto 2px auto;
+  text-align: center;
+  font-size: 10.5pt;
+  font-weight: bold;
+  font-family: arial, sans-serif;
+  cursor: pointer;
+}
+div.DwCViewPicker_Button:hover
+{
+  background-color: gray;
+}
+
+div.DwCViewPicker_RecordsTableButton
+{
+}
+div.DwCViewPicker_RecordsTableButton:after
+{
+  content: "[R]";
+}
+
+div.DwCViewPicker_MapViewButton
+{
+}
+div.DwCViewPicker_MapViewButton:after
+{
+  content: "[M]";
+}
+
+div.DwCViewPicker_FieldsViewButton
+{
+}
+div.DwCViewPicker_FieldsViewButton:after
+{
+  content: "[F]";
 }
 
 
@@ -428,7 +577,8 @@ li.DwCContextMenu_GroupHeader
   background-color: #CCCCFF;
 }
 
-li.DwCContextMenu_Item {
+li.DwCContextMenu_Item
+{
   padding: 0px 2px 0px 2px;
   font-weight: normal;
   color: black;
@@ -472,11 +622,13 @@ li.DwCContextMenu_Item:hover
  ******************************************************************/
 div.DwCMapView_Container
 {
-  width: 100%;
-  height: 400px;
+  width: auto;
+  margin: auto;
+  height: 500px;
   border-style: solid;
   border-color: black;
   border-width: 2px;
+  clear: right;
 }
 
 
