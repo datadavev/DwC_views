@@ -632,6 +632,108 @@ div.DwCMapView_Container
 }
 
 
+/******************************************************************
+ * DwCFieldsView Styles
+ ******************************************************************/
+
+div.DwCFieldsView_Container
+{
+  width: auto;
+  margin: auto;
+  border-style: solid;
+  border-color: black;
+  border-width: 2px;
+  clear: right;
+  font-size: 10.5pt;
+}
+
+table.DwCFieldsView_Table
+{
+  width: 100%;
+}
+
+tr.DwCFieldsView_AttributeTitlesRow
+{
+  background-color: {{ header_background_color }};
+}
+
+tr.DwCFieldsView_FieldRow1
+{
+  background-color: {{ row1_background_color }};
+}
+
+tr.DwCFieldsView_FieldRow2
+{
+  background-color: {{ row2_background_color }};
+}
+
+th.DwCFieldsView_AttributeTitle
+{
+  padding: 2px 6px 2px 2px;
+  text-align: left;
+  font-family: arial, sans-serif;
+  font-weight: bold;
+  font-size: 0.95em;
+}
+
+td.DwCFieldsView_AttributeValue
+{
+  padding: 2px 6px 2px 4px;
+  text-align: left;
+  font-family: times, serif;
+  font-weight: normal;
+  font-size: 0.85em;
+}
+
+td.DwCFieldsView_FieldName
+{
+  padding: 2px 6px 2px 4px;
+  text-align: left;
+  font-family: times, serif;
+  font-weight: bold;
+  font-size: 0.85em;
+}
+td.DwCFieldsView_FieldName:after
+{
+  font-weight: bold;
+  content: ':';
+}
+
+tr.DwCFieldsView_FirstRow
+{
+}
+
+tr.DwCFieldsView_LastRow
+{
+}
+
+td.DwCFieldsView_FirstRow
+{
+}
+
+td.DwCFieldsView_LastRow
+{
+}
+
+td.DwCFieldsView_FirstColumn
+{
+}
+
+td.DwCFieldsView_LastColumn
+{
+}
+
+tr.DwCFieldsView_ClickableRow
+{
+}
+tr.DwCFieldsView_ClickableRow:hover
+{
+  cursor: pointer;
+  background-color: gray;
+}
+
+
+
 {% endwith %}
 {% endwith %}
 {% endwith %}

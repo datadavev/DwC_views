@@ -8,7 +8,10 @@ TODO:
    recordsTable: special class for active (single record) row
    recordsTable: row number field to be handled in fields array
    recordsTable: nPage(n) function - jump to page number "n"
-   mapView: realtime scroll/move/zoom marker querying
+   recordsTable: sort by column not working
+   mapView: search not drawing rectangles
+   mapView: double-click on rectangle should center around rectangle
+   mapView: when tiling, original fitBounds calls an extaneous query
    all: various hook options
 */
 // ******** //
@@ -46,6 +49,8 @@ TODO:
       this.viewPickerOptions = this.options.viewPickerOptions;
       this.recordsTable = this.options.recordsTable;
       this.recordsTableOptions = this.options.recordsTableOptions;
+      this.fieldsView = this.options.fieldsView;
+      this.fieldsViewOptions = this.options.fieldsViewOptions;
       this.onInit = this.options.onInit;
       this.onSearch = this.options.onSearch;
 
@@ -103,8 +108,8 @@ TODO:
     recordsTableOptions: null,
     mapView: null,
     mapViewOptions: null,
-    fieldsTable: null,
-    fieldsTableOptions: null,
+    fieldsView: null,
+    fieldsViewOptions: null,
     onInit: null,
     onSearch: null
   };
@@ -122,6 +127,7 @@ TODO:
     var view_picker;
     var records_table;
     var map_view;
+    var fields_view;
     var search_options;
 
     // style-ize the parent element
@@ -313,6 +319,48 @@ TODO:
     }
 
 
+    /* add a fields view to the suite (if not already present or set to false) */
+    if (obj.fieldsView == null) {
+      fields_view = obj.element.find('div.DwCFieldsView_Container');
+      if (fields_view.length == 0) {
+        fields_view = $('<div class="DwCFieldsView_Container"></div>');
+        obj.element.append(fields_view);
+      }
+
+      // if special options were specified, make sure that the the parent
+      // gateway server's options are used (unless overridden)
+      if (fields_view.data('DwCFieldsView') == null) {
+        if (obj.fieldsViewOptions) {
+          // if no baseDir was supplied in the options, use the DwCViews baseDir
+          if (obj.fieldsViewOptions['gatewayAddress'] == null) {
+            obj.fieldsViewOptions['gatewayAddress'] = obj.gatewayAddress;
+          }
+          // if no baseDir was supplied in the options, use the DwCViews baseDir
+          if (obj.fieldsViewOptions['baseDir'] == null) {
+            obj.fieldsViewOptions['baseDir'] = obj.baseDir;
+          }
+        }
+        // if no options were passed in, set some defaults
+        else {
+          // pass along the baseDir and gatewayAddress
+          obj.fieldsViewOptions = {};
+          obj.fieldsViewOptions['gatewayAddress'] = obj.gatewayAddress;
+          obj.fieldsViewOptions['baseDir'] = obj.baseDir;
+        }
+
+        // make this records table aware of the single record table
+        if (obj.fieldsView && obj.fieldsViewOptions['recordsTable'] == null) {
+          obj.fieldsViewOptions['recordsTable'] = obj.recordsTable;
+        }
+
+        // initialize our record table
+        fields_view.DwCFieldsView(obj.fieldsViewOptions);
+      }
+
+      obj.fieldsView = fields_view.data('DwCFieldsView');
+    }
+
+
     // initialize the view picker (if not already initialized)
     // now that we have a handle on all of the views
     if (view_picker.data('DwCViewPicker') == null) {
@@ -340,8 +388,8 @@ TODO:
             };
           }
           if (obj.fieldsView) {
-            obj.viewPickerOptions['buttons']['FieldsTableButton'] = {
-              "view": obj.fieldsTable
+            obj.viewPickerOptions['buttons']['FieldsViewButton'] = {
+              "view": obj.fieldsView
             };
           }
         }
@@ -370,7 +418,7 @@ TODO:
         // likewise if the dwc_views object has a map view
         if (dwc_views.mapView) {
           dwc_views.mapView.search.filter = filter;
-          dwc_views.mapView.doSearch(dwc_views.mapView.search, {}, true, false);
+          dwc_views.mapView.Search();
         }
       }
     }
@@ -424,6 +472,10 @@ TODO:
     this.doSearch = function(options) {
       var obj = this;
       var callback;
+      var ajax_handler;
+
+      var callback_args = typeof(options['callbackArgs']) != 'undefined'? options['callbackArgs'] : {};
+
       if (typeof(options.callback) == 'function') {
         callback = options.callback;
       } else {
@@ -432,7 +484,9 @@ TODO:
 
       // if we are able to use the cache, do so
       if (options.cache && this.data != null) {
-        return callback(data);
+        callback(data, callback_args);
+        // no actual ajax call, return null
+        return null;
       }
       // if not, do an actual query
       else {
@@ -441,10 +495,13 @@ TODO:
         /// DEBUG ///
         console.log("Search URL: " + url);
 
-        $.getJSON(url, function(data) {
+        ajax_handler = $.getJSON(url, function(data) {
           obj.data = data;
-          return callback(data);
+          callback(data, callback_args);
         });
+
+        // return a handle to the ajax request
+        return ajax_handler;
       }
     }
 
@@ -458,24 +515,20 @@ TODO:
       // at the object's internal instance settings
       if (options.filter) { filter = options.filter; }
       else if (this.filter) { filter = this.filter; }
+      // if no filter was specified, use the default
+      else { filter = "*:*"; }
 
       if (options.filterAddendum) { filter_addendum = options.filterAddendum; }
       else if (this.filterAddendum) { filter_addendum = this.filterAddendum; }
 
       // combine our filter and filter addendum (if they exist)
-      if (filter) {
+      if (filter_addendum) {
         // combine both the filter and the filter addendum
-        if (filter_addendum) {
-          params['filter'] = "(" + filter + ") AND (" + filter_addendum + ")";
-        }
-        // no addendum specified, use only the raw filter
-        else {
-          params['filter'] = filter;
-        }
+        params['filter'] = "(" + filter + ") AND (" + filter_addendum + ")";
       }
-      // only a filter addendum was specified, it will be used in lieu of the filter
-      else if (filter_addendum) {
-        params['filter'] = filter_addendum;
+      // no addendum specified, use only the raw filter
+      else {
+        params['filter'] = filter;
       }
 
       // start at which record/page
@@ -533,16 +586,15 @@ TODO:
         callback_function(parseInt(data.numFound), callback_options);
       }
 
-      // run the actual search
-      this.doSearch(search_options)
+      // run the actual search and return the ajax handler
+      return this.doSearch(search_options)
     }
-
 
   }
 
   $.DwCViews.DwCSearch.defaultOptions = {
     gatewayAddress: "",
-    baseDir: "/",
+    baseDir: "/gateway/",
     filter: null,
     filterAddendum: null,
     fields: null,
@@ -551,6 +603,48 @@ TODO:
     sortBy: null,
     sortOrder: null,
     callback: function(data) { return data; }
+  }
+
+
+
+
+
+  /***************************************************************************
+   * DwCFields - represents a listing of fields found within the records
+   * of the Darwin Core Database
+   ***************************************************************************/
+
+  $.DwCViews.DwCFields = function(options) {
+
+    this.options = $.extend({}, $.DwCViews.DwCFields.defaultOptions, options);
+
+    this.gatewayAddress = this.options.gatewayAddress;
+    this.baseDir = this.options.baseDir;
+    this.callback = this.options.callback;
+    this.data = null;
+
+    this.baseURL = this.gatewayAddress + this.baseDir;
+
+    this.fetchFields = function(callback) {
+      var obj = this;
+      var url = this.baseURL + "fields";
+
+      callback = typeof(callback) == 'function'? callback : obj.callback;
+
+      $.getJSON(url, function(data) {
+        obj.data = data;
+        if (typeof(callback) == 'function') {
+          callback(data);
+        }
+      });
+    }
+
+  }
+
+  $.DwCViews.DwCFields.defaultOptions = {
+    gatewayAddress: '',
+    baseDir: "/gateway/",
+    callback: null
   }
 
 
@@ -1282,8 +1376,8 @@ TODO:
     obj.element.addClass("DwCRecordsTable_Container");
     
     // if the table does not already exist, create it
-    records_table = obj.element.find('DwCRecordsTable');
-    if (records_table.length ==0) {
+    records_table = obj.element.find('.DwCRecordsTable:first');
+    if (records_table.length == 0) {
       records_table = $('<table cellpadding="0" cellspacing="0" class="DwCRecordsTable"></table>');
       obj.element.append(records_table);
     }
@@ -1600,16 +1694,24 @@ TODO:
       this.zoom = this.options.zoom;
       this.mapTypeId = this.options.mapTypeId;
       this.center = this.options.center;
-      this.overlays = this.options.overlays;
+      this.tileResults = this.options.tileResults;
+      this.markers = this.options.markers;
+      this.rectangles = this.options.rectangles;
       this.autoCenter = this.options.autoCenter;
       this.maxRecords = this.options.maxRecords;
+      this.displayGrid = this.options.displayGrid;
+      this.displayMarkers = this.options.displayMarkers;
       this.tileRows = this.options.tileRows;
       this.tileCols = this.options.tileCols;
+      this.maxMarkersPerTile = this.options.maxMarkersPerTile;
+      this.tileOpacity = this.options.tileOpacity;
       this.totalRecords = 0;
 
       // some event hook handlers
       this.onInit = this.options.onInit;
       this.onMarkerClick = this.options.onMarkerClick;
+      this.onRectangleClick = this.options.onRectangleClick;
+      this.onRectangleDoubleClick = this.options.onRectangleDoubleClick;
       this.onSearch = this.options.onSearch;
       this.onShow = this.options.onShow;
       this.onHide = this.options.onHide;
@@ -1624,6 +1726,9 @@ TODO:
       this.markerBounds = null; // used to fit the map to a new set of markers
       this.dynamicMarkers = false;
       this.dynamicMarkerEventHandler = null; // used when turning dynamic markers on and off 
+
+      // allows us to kill an ajax call already in progress
+      this.ajaxHandlers = [];
 
       setupMapView(this);
 
@@ -1640,7 +1745,7 @@ TODO:
         this.search.filterAddendum += solrEscapeValue(this.longitudeField) + ':[\-180 TO 180]';
 
         // bind the idle function only after the initial search
-        search_options['callback'] = function () {
+        search_options['callback'] = function (data, args) {
           // bind the idle function to our actual google maps "map" object
           obj.idleEventhandler = google.maps.event.addListener(obj.map, 'idle', function () {
             obj.restoreState();
@@ -1648,7 +1753,7 @@ TODO:
         }
 
         // retreive records and place markers
-        this.doSearch(this.search, search_options, this.autoCenter, false);
+        this.Search(this.search, search_options);
       }
 
     }
@@ -1658,336 +1763,408 @@ TODO:
    * DwCMapView - Begin Public Functions
    ***************************************************************************/
 
-     // save the LatLngBounds box of the map's current view
-     // (this allows us to restore the zoom/center later)
-     this.saveState = function() {
-       this.lastKnownWidth = this.element.width();
-       this.lastKnownHeight = this.element.height();
-       this.lastKnownBounds = this.map.getBounds();
-       this.lastKnownCenter = this.map.getCenter();
-       this.lastKnownZoom = this.map.getZoom();
-     }
+    // save the LatLngBounds box of the map's current view
+    // (this allows us to restore the zoom/center later)
+    this.saveState = function() {
+      this.lastKnownWidth = this.element.width();
+      this.lastKnownHeight = this.element.height();
+      this.lastKnownBounds = this.map.getBounds();
+      this.lastKnownCenter = this.map.getCenter();
+      this.lastKnownZoom = this.map.getZoom();
+    }
 
 
-     // restores the map's last saved zoom/center
-     this.restoreState = function() {
-       // if the object is not visible (hidden), don't do anything at all
-       if (this.isHidden()) {
-         return;
-       }
-       
-       // if the size of the map view has changed since it was last fisible
-       if (this.lastKnownWidth != this.element.width()
-           || this.lastKnownHeight != this.element.height()) {
-         // resize the map to fit the new view size
-         google.maps.event.trigger(this.map, 'resize');
-       }
+    // restores the map's last saved zoom/center
+    this.restoreState = function() {
+      // if the object is not visible (hidden), don't do anything at all
+      if (this.isHidden()) {
+        return;
+      }
+      
+      // if the size of the map view has changed since it was last visible
+      if (this.lastKnownWidth != this.element.width()
+          || this.lastKnownHeight != this.element.height()) {
+        // resize the map to fit the new view size
+        google.maps.event.trigger(this.map, 'resize');
+      }
 
-       // if there is a call to fit the map to a new set of markers
-       else if (this.fitBounds) {
-         this.fitBounds = false;
-         this.map.fitBounds(this.markerBounds);
-       }
+      // if there is a call to fit the map to a new set of markers
+      else if (this.fitBounds) {
+        this.fitBounds = false;
+        this.map.fitBounds(this.markerBounds);
+      }
 
-       // if the bounds of the map have changed, and dynamic loading has been turned on
-       else if (this.dynamicMarkers && !this.map.getBounds().equals(this.lastKnownBounds)) {
-         // dynamically load all markers within the map's current/active bounds
-         this.loadTile(this.map.getBounds());
-       }
+      // if the bounds of the map have changed, and dynamic loading has been turned on
+      else if (this.dynamicMarkers && !this.map.getBounds().equals(this.lastKnownBounds)) {
+        // dynamically load all markers within the map's current/active bounds
+        if (this.displayMarkers || this.displayGrid) {
+          this.loadBounds({
+            "bounds": this.map.getBounds(),
+            "dynamic": true,
+            "tile": false,
+            "center": false
+          });
+        }
+      }
 
-       // save the state so that there is no redundant resizing or marker loading
-       this.saveState();
-
-     }
-
-
-     // returns true if the map view is hidden, false if it is visible
-     this.isHidden = function() {
-       return !this.element.is(":visible");
-     }
-
-
-     // hide this plugin
-     this.hide = function() {
-       // don't do anything if the map view is already hidden
-       if (!this.isHidden()) {
-         // if a callback function was specified for the onHide() event hook
-         if (typeof(this.onHide) == 'function') {
-           this.onHide(this);
-         }
-         this.saveState();
-         this.element.hide();
-       }
-     }
+      // save the state so that there is no redundant resizing or marker loading
+      this.saveState();
+    }
 
 
-     // show this plugin (only if it is hidden)
-     this.show = function() {
-       var obj = this;
-
-       // do nothing if the map view is already visible
-       if (this.isHidden()) {
-         this.element.show(function() {
-           obj.restoreState();
-           // if a callback function was specified for the onShow() event hook
-           if (typeof(obj.onShow) == 'function') {
-             obj.onHide(obj);
-           }
-         });
-       }
-     }
+    // returns true if the map view is hidden, false if it is visible
+    this.isHidden = function() {
+      return !this.element.is(":visible");
+    }
 
 
-     // add a marker (icon) to the map
-     this.addMarker = function(key, options, values, display) {
-       var obj = this;
-       var marker = new google.maps.Marker(options);
-
-       // if not display boolean is passed, default to true
-       display = typeof('display') != 'undefined'? display : true; 
-
-       // if any values were passed, add them to the marker's values
-       if (values) {
-         marker.setValues(values);
-       }
-
-       // if a marker click callback function has been defined
-       if (typeof(obj.onMarkerClick) == 'function') {
-         // set the 'click' event to the callback
-         google.maps.event.addListener(marker, 'click', function() {
-           obj.onMarkerClick(obj, marker);
-         });
-       }
-
-       // if the key already exists, unshow/hide the previous marker
-       // this marker will replace it
-       if (key in this.overlays) {
-         this.overlays[key].setMap(null);
-       }
-
-       // add this marker to our array of all markers/overlays
-       this.overlays[key] = marker;
-
-       // show the new marker on the map (if requested)
-       if (display) {
-         marker.setMap(this.map);
-       }
-     }
+    // hide this plugin
+    this.hide = function() {
+      // don't do anything if the map view is already hidden
+      if (!this.isHidden()) {
+        // if a callback function was specified for the onHide() event hook
+        if (typeof(this.onHide) == 'function') {
+          this.onHide(this);
+        }
+        this.saveState();
+        this.element.hide();
+      }
+    }
 
 
-     // makes sure that all markers in the "overlays" array
-     // have been made visible on the map
-     this.displayOverlays = function() {
-       var obj = this;
+    // show this plugin (only if it is hidden)
+    this.show = function() {
+      var obj = this;
 
-       $.each(this.overlays, function(key, overlay) {
-         overlay.setMap(obj.map)
-       });
-     }
-
-
-     // hide all icons on the map and clear out all of
-     // the icons from the overlays array
-     this.deleteOverlays = function() {
-       var obj = this;
-
-       $.each(this.overlays, function(key, overlay) {
-         overlay.setMap(null)
-       });
-
-       this.overlays = {};
-     }
+      // do nothing if the map view is already visible
+      if (this.isHidden()) {
+        this.element.show(function() {
+          obj.restoreState();
+          // if a callback function was specified for the onShow() event hook
+          if (typeof(obj.onShow) == 'function') {
+            obj.onShow(obj);
+          }
+        });
+      }
+    }
 
 
-     // takes a google maps bounds box then queries/displays
-     // only the markers located within that box/bounds
-     this.loadTile = function(bounds_box, search, search_options) {
-       var obj = this;
-       var filter_addendum = "";
-       var northeast; // LatLng top-right corner
-       var southwest; // LatLng bottom-left corner
-       var max_lat;
-       var max_lng;
-       var min_lat;
-       var min_lng;
-
-       // if no alternative search was supplied, use the object's resident search
-       search = typeof(search) != 'undefined'? search : this.search; 
-
-       // if no alternative search was supplied, use the object's resident search
-       search_options = typeof(search_options) != 'undefined'? search_options : {}; 
-
-       northeast = bounds_box.getNorthEast();
-       southwest = bounds_box.getSouthWest();
-
-       // figure out the min/max latitude
-       if (northeast.lat() > southwest.lat()) {
-         max_lat = northeast.lat();
-         min_lat = southwest.lat();
-       }
-       else {
-         max_lat = southwest.lat();
-         min_lat = northeast.lat();
-       }
-
-       // figure out the min/max longitude
-       if (northeast.lng() > southwest.lng()) {
-         max_lng = northeast.lng();
-         min_lng = southwest.lng();
-       }
-       else {
-         max_lng = southwest.lng();
-         min_lng = northeast.lng();
-       }
-
-       // add a filter clause for the latitude
-       filter_addendum += solrEscapeValue(this.latitudeField);
-       filter_addendum += ":[";
-       filter_addendum += solrEscapeValue(min_lat);
-       filter_addendum += " TO ";
-       filter_addendum += solrEscapeValue(max_lat);
-       filter_addendum += "]";
-
-       filter_addendum += " AND ";
-
-       // check if the bounds box spans the 180th longitude
-       if (northeast.lng() < southwest.lng()) {
-         filter_addendum += "(";
-         filter_addendum += solrEscapeValue(this.longitudeField);
-         filter_addendum += ":";
-         filter_addendum += "[" + solrEscapeValue(max_lng) + " TO 180]";
-         filter_addendum += " OR ";
-         filter_addendum += solrEscapeValue(this.longitudeField);
-         filter_addendum += ":";
-         filter_addendum += "[\-180 TO " + solrEscapeValue(min_lng) + "]";
-         filter_addendum += ")";
-       }
-       else {
-         filter_addendum += solrEscapeValue(this.longitudeField);
-         filter_addendum += ":";
-         filter_addendum += "[";
-         filter_addendum += solrEscapeValue(min_lng);
-         filter_addendum += " TO ";
-         filter_addendum += solrEscapeValue(max_lng);
-         filter_addendum += "]";
-       }
-
-       // add bounds as a filter addendum
-       search_options['filterAddendum'] = filter_addendum;
-
-       // this is a partial/dynamic load, it shouldn't turn
-       // dynamic loading on or off
-       search_options['dynamic'] = true;
-
-       /// DEBUG ///
-       console.log("[" + southwest.lat() + ", " + northeast.lng() + "] - [" + northeast.lat() + ", " + northeast.lng() + "]\n");
-       console.log("[" + southwest.lat() + ", " + southwest.lng() + "] - [" + northeast.lat() + ", " + southwest.lng() + "]\n");
-       console.log(filter_addendum + "\n\n");
-
-       this.doSearch(search, search_options, false, false);
-     }
+    this.cancelAjaxCalls = function() {
+      var obj = this;
+      $.each(this.ajaxHandlers, function(i, ajax_handler) {
+        if (ajax_handler.readyState != 4) {
+          /// DEBUG ///
+          console.error("Aborting Ajax Call");
+          ajax_handler.abort();
+        }
+      });
+      obj.ajaxHandlers.length = 0;
+    }
 
 
-     // takes the results of a DwCSearch and places a
-     // the resulting records' corresponding markers on
-     // the map
-     this.loadMarkers = function(data, center) {
-       var obj = this;
-       var bounds;
-
-       // default values
-       center = typeof(center) != 'undefined'? center : false;
-
-       // if we're going to center on our new result set, create a blank bounds
-       if (center) { bounds = new google.maps.LatLngBounds(); }
-  
-
-       $.each(data.docs, function(i, record) {
-         var lat;
-         var lng;
-         var marker_options;
-         var marker_values;
-
-         lat = record[obj.latitudeField];
-         lng = record[obj.longitudeField];
-
-         // check to make sure that lat and lng are valid numbers
-         if (isNumeric(lat) && isNumeric(lng)) {
-           lat = parseFloat(lat);
-           lng = parseFloat(lng);
-
-           // check to make sure that the lat and lng values have valid ranges
-           if (lat <= 90 && lat >= -90 && lng <= 180 && lng >= -180) {
-
-             marker_options = {};
-             marker_options['position'] = new google.maps.LatLng(lat, lng);
-
-             // if the title field is present, use its value as the marker title
-             if (obj.titleField && obj.titleField in record) {
-               marker_options['title'] = record[obj.titleField].toString();
-             }
-
-             // add the recordID to the metadata
-             marker_values = {'recordID': record[obj.idField]}
-
-             // add the marker to our mapView and tell it to display itself
-             obj.addMarker(record[obj.idField], marker_options, marker_values, true);
-
-             // if we are going to center tha map on the new result-set
-             if (center) {
-               // add the coordinance to be considered when zooming/centering the map
-               bounds.extend(marker_options['position']);
-             }
-           }
-           
-         }
-       });
-
-       // if center == true, center/zoom the map based on the new set of markers
-       if (center) {
-         // set the bounds (which will be 'restored' when the map view is unhidden
-         this.markerBounds = bounds;
-         this.fitBounds = true;
-         this.restoreState();
-       }
-     }
+    this.displayMarkers = function(display) {
+      if (display) {
+        this.displayMarkers = true;
+      }
+      else {
+        this.displayMarkers = false;
+      }
+    }
 
 
-     // takes a DwcSearch object and displays the records
-     // returned from the search on the map
-     this.doSearch = function(search, search_options, center, cached) {
-       var callback_options = {};
-       
-       // set some default values
-       search = typeof(search) != 'undefined'? search : this.search;
-       search_options = typeof(search_options) != 'undefined'? search_options : {};
-       center = typeof(center) != 'undefined'? center: false;
-       cached = typeof(cached) != 'undefined'? cached : false;
+    this.displayGrid = function(display) {
+      if (display) {
+        this.displayGrid = true;
+      }
+      else {
+        this.displayGrid = false;
+      }
+    }
 
-       // add some essential options/overrides
-       search_options['fieldString'] = this.idField + "," + this.latitudeField + ',' + this.longitudeField + ',' + this.titleField;
 
-       callback_options['mapView'] = this;
-       callback_options['search_options'] = search_options;
-       callback_options['center'] = center;
+    // add a marker (icon) to the map
+    this.addMarker = function(key, marker_options, marker_values) {
+      var obj = this;
+      var default_marker_options = {};
+      var marker;
 
-       // if 'dynamic' was specified, pass it onto the callback options
-       if (search_options.hasOwnProperty('dynamic')) {
-         callback_options['dynamic'] = search_options['dynamic'];
-         delete search_options['dynamic'];
-       }
+      default_marker_options['map'] = this.map;
 
-       // if a callback function was specified within the search options,
-       // intercept it here and pass it along, instead, to the final search callback
-       if (typeof(search_options['callback']) == 'function') {
-         callback_options['callback'] = search_options['callback'];
-         // get rid of it so that it's not called while retreiving a result count
-         delete search_options['callback'];
-       }
+      // if no marker options were given, use the defaults
+      if(typeof('marker_options') == 'undefined') {
+        marker_options = default_marker_options; 
+      // otherwise, extend the default options
+      } else {
+        marker_options = $.extend({}, default_marker_options, marker_options);
+      }
 
-       // perform the actual search
-       search.getRecordsCount(search_options, mapView_DoSearch, callback_options);
-     }
+      marker = new google.maps.Marker(marker_options);
+
+      // if any values were passed, add them to the marker's values
+      if (marker_values) {
+        marker.setValues(marker_values);
+      }
+
+      // if a marker click callback function has been defined
+      if (typeof(obj.onMarkerClick) == 'function') {
+        // set the 'click' event to the callback
+        google.maps.event.addListener(marker, 'click', function() {
+          obj.onMarkerClick(obj, marker);
+        });
+      }
+
+      // if the key already exists, unshow/hide the previous marker
+      // this marker will replace it
+      if (key in this.markers) {
+        this.markers[key].setMap(null);
+      }
+
+      // add this marker to our array of all markers/overlays
+      this.markers[key] = marker;
+
+      return marker;
+    }
+
+
+    this.addRectangle = function(bounds, rectangle_options, rectangle_values) {
+      var obj = this;
+      var default_rectangle_options = {}
+      var rectangle;
+      var rectangle_options;
+
+      // default rectangle options
+      default_rectangle_options['map'] = this.map;
+      default_rectangle_options['bounds'] = bounds;
+      default_rectangle_options['fillColor'] = "red";
+      default_rectangle_options['fillOpacity'] = this.tileOpacity;
+      if (typeof(this.onRectangleClick) != 'function' &&
+        typeof(this.onRectangleDoubleClick) != 'function') {
+        default_rectangle_options['clickable'] = false;
+      }
+
+      // extend default rectangle options
+      if (typeof(rectangle_options) == 'undefined') {
+        // if no options were specified, use the defaults
+        rectangle_options = default_rectangle_options;
+      }
+      else {
+        // mix/extend the default options with those given
+        rectangle_options = $.extend({}, default_rectangle_options, rectangle_options);
+      }
+
+      rectangle = new google.maps.Rectangle(rectangle_options);
+
+      // if any special values have been passed to be added to the rectangle
+      if (rectangle_values) {
+        rectangle.setValues(rectangle_values);
+      }
+
+      // add the new rectangle to the collection of overlays
+      this.rectangles.push(rectangle);
+
+      // attach an onclick callback function if one has been specified
+      if (typeof(this.onRectangleClick) == 'function') {
+        google.maps.event.addListener(rectangle, 'click', function() {
+          obj.onRectangleClick(obj, rectangle);
+        });
+      }
+
+      // attach a dblclick callback function if one has been specified
+      if (typeof(this.onRectangleDoubleClick) == 'function') {
+        google.maps.event.addListener(rectangle, 'dblclick', function() {
+          obj.onRectangleDoubleClick(obj, rectangle);
+        });
+      }
+
+      return rectangle;
+    }
+
+
+    // makes sure that all markers in the "markers" array
+    // have been made visible on the map
+    this.displayMarkers = function() {
+      var obj = this;
+      $.each(this.markers, function(key, marker) {
+        marker.setMap(obj.map)
+      });
+    }
+
+
+    // makes sure that all overlays in the "rectangles" array
+    // have been made visible on the map
+    this.displayRectangles = function() {
+      var obj = this;
+      $.each(this.rectangles, function(index, rectangle) {
+        rectangle.setMap(obj.map)
+      });
+    }
+
+
+    // makes sure that all overlays in the "markers"
+    // and "rectangles" array have been made visible on the map
+    this.displayOverlays = function() {
+      this.displayMarkers();
+      this.displayRectangles();
+    }
+
+
+    // hide all markers on the map and clear out all of
+    // the markers from the markers array
+    this.deleteMarkers = function() {
+      var obj = this;
+      $.each(this.markers, function(key, marker) {
+        marker.setMap(null)
+      });
+      this.markers = {};
+    }
+
+
+    // hide all rectangles on the map and clear out all of
+    // the rectangles from the rectangles array
+    this.deleteRectangles = function() {
+      var obj = this;
+      $.each(this.rectangles, function(index, rectangle) {
+        rectangle.setMap(null)
+      });
+      this.rectangles.length = 0;
+    }
+
+
+    // hide all (types of) overlays on the map and clear out all of
+    // the overlays from the markers and rectangles array
+    this.deleteOverlays = function() {
+      this.deleteMarkers();
+      this.deleteRectangles();
+    }
+
+
+    // takes a google maps bounds box then queries/displays
+    // only the markers located within that box/bounds
+    this.loadBounds = function(args) {
+      var obj = this;
+
+      // if no alternative search was supplied, use the object's resident search
+      var search = args.hasOwnProperty('search')? args['search'] : this.search; 
+
+      // if no alternative search was supplied, use the object's resident search
+      var search_options = args.hasOwnProperty('searchOptions')? args['searchOptions'] : {}; 
+
+      // if no bounds were specified, use the current google map bounds
+      var bounds = args.hasOwnProperty('bounds')? args['bounds'] : this.map.getBounds();
+
+      // assume dynamic if not specified
+      var dynamic = args.hasOwnProperty('dynamic')? args['dynamic'] : true;
+
+      // tile defaults to true
+      var tile = args.hasOwnProperty('tile')? args['tile'] : true;
+
+      // add bounds as a filter addendum
+      search_options['filterAddendum'] = mapView_CalculateBoundsAddendum(this, bounds);
+
+      mapView_Search({
+        "mapView": obj,
+        "search": search,
+        "searchOptions": search_options,
+        "center": false,
+        "tile": tile,
+        "dynamic": dynamic,
+        "bounds": bounds
+      });
+    }
+
+
+    // takes the results of a DwCSearch and places a
+    // the resulting records' corresponding markers on
+    // the map
+    this.loadMarkers = function(data, center) {
+      var obj = this;
+
+      // center default values
+      center = typeof(center) != 'undefined'? center : false;
+
+      // if we're going to center on our new result set, create a blank bounds
+      if (center) { bounds = new google.maps.LatLngBounds(); }
+
+      $.each(data.docs, function(i, record) {
+        var lat;
+        var lng;
+        var marker_options;
+        var marker_values;
+
+        lat = record[obj.latitudeField];
+        lng = record[obj.longitudeField];
+
+        // check to make sure that lat and lng are valid numbers
+        if (isNumeric(lat) && isNumeric(lng)) {
+          lat = parseFloat(lat);
+          lng = parseFloat(lng);
+
+          // check to make sure that the lat and lng values have valid ranges
+          if (lat <= 90 && lat >= -90 && lng <= 180 && lng >= -180) {
+
+            marker_options = {};
+            marker_options['position'] = new google.maps.LatLng(lat, lng);
+
+            // if the title field is present, use its value as the marker title
+            if (obj.titleField && obj.titleField in record) {
+              marker_options['title'] = record[obj.titleField].toString();
+            }
+
+            // add the recordID to the metadata
+            marker_values = { 'recordID': record[obj.idField] };
+
+            // add the marker to our mapView and tell it to display itself
+            obj.addMarker(record[obj.idField].toString(), marker_options, marker_values);
+
+            // if we are going to center tha map on the new result-set
+            if (center) {
+              // add the coordinance to be considered when zooming/centering the map
+              bounds.extend(marker_options['position']);
+            }
+          }
+          
+        }
+      });
+
+      // if center == true, center/zoom the map based on the new set of markers
+      if (center) {
+        // set the bounds (which will be 'restored' when the map view is unhidden
+        this.markerBounds = bounds;
+        this.fitBounds = true;
+        this.restoreState();
+      }
+    }
+
+
+    // generic search function (non-dynamic, non-tiling)
+    this.Search = function(search, search_options) {
+      // standard args that make this a top-level search
+      var args = {
+        "mapView": this,
+        "center": true,
+        "dynamic": false,
+        "tile": false,
+      };
+
+      // the initial search will encompass the entire map, if we are tiling, we need
+      // to pass the bounds for the entire map
+      args['bounds'] = new google.maps.LatLngBounds(
+        new google.maps.LatLng(-90, -180, true),
+        new google.maps.LatLng(90, 180, true)
+      );
+      // the initial viewport should be to stretch/blow up the whole map to fit
+      this.markerBounds = args['bounds'];
+      this.fitBounds = true;
+
+      // if optional args were supplied, pass them on
+      if (typeof(search) != "undefined") {args['search'] = search}
+      if (typeof(search_options) != "undefined") {args['searchOptions'] = search_options}
+
+      mapView_Search(args);
+    }
+
+
+
 
 
   /***************************************************************************
@@ -2021,20 +2198,46 @@ TODO:
     latitudeField: 'lat',
     longitudeField: 'lng',
     titleField: 'sciName_s',
-    maxRecords: 500,
-    overlays: {},
+    maxRecords: 1000,
+    tileResults: false,
+    markers: {},
+    rectangles: [],
     zoom: 0,
     center: new google.maps.LatLng(0,0),
     autoCenter: true,
-    mapTypeId: google.maps.MapTypeId.ROADMAP,
+    mapTypeId: google.maps.MapTypeId.HYBRID,
+    displayGrid: false,
+    displayMarkers: true,
     tileRows: 5,
     tileCols: 5,
+    maxMarkersPerTile: 50,
+    tileOpacity: 0.4,
     onInit: null,
     onMarkerClick: null,
+    //onRectangleClick: function(map_view, rectangle) {
+    //  alert("Total Records in Tile: " + rectangle.get('recordCount'));
+    //},
+    onRectangleClick: null,
+    onRectangleDoubleClick: function(obj, rectangle) {
+      obj.map.fitBounds(rectangle.getBounds());
+    },
+    onDynamicLoad: null,
     onSearch: null,
     onShow: null,
     onHide: null
   };
+
+
+  // some default options for manipulating tile data
+  $.DwCMapView.defaultTileOptions = {
+    northInclusive: true,
+    southInclusive: true,
+    eastInclusive: true,
+    westInclusive: true
+  }
+
+
+
 
 
   /***************************************************************************
@@ -2058,70 +2261,658 @@ TODO:
 
     // set the map's initial state
     obj.saveState();
+  }
 
+
+  function mapView_Search(args) {
+    var obj = args['mapView'];
+    var ajax_handler;
+    var callback;
+    var callback_args = {};
+    
+    // set some default values
+    var search = args.hasOwnProperty('search')? args['search'] : obj.search;
+    var search_options = args.hasOwnProperty('searchOptions')? args['searchOptions'] : {};
+    var center = args.hasOwnProperty('center')? args['center'] : true;
+    var dynamic = args.hasOwnProperty('dynamic')? args['dynamic'] : false;
+    var tile = args.hasOwnProperty('tile')? args['tile'] : false;
+
+    // create options to pass to our actual search function
+    callback_args['mapView'] = obj;
+    callback_args['dynamic'] = dynamic;
+    callback_args['center'] = center;
+    callback_args['tile'] = tile;
+    if (args.hasOwnProperty('rectangleOptions')) {
+      callback_args['rectangleOptions'] = args['rectangleOptions'];
+    }
+
+    // add some essential options/overrides
+    search_options['fieldString'] = obj.idField + "," + obj.latitudeField + ',' + obj.longitudeField + ',' + obj.titleField;
+    search_options['sortBy'] = 'random_1';
+    // if a callback function has already been specified, allow it to
+    // piggyback off of the search function after it completes
+    if (search_options.hasOwnProperty('callback') && typeof(search_options['callback']) == 'function') {
+      var callback = search_options['callback'];
+      search_options['callback'] = function(data, args) {
+        mapView_DoSearch(data, args);
+        callback();
+      };
+    }
+    else {
+      search_options['callback'] = mapView_DoSearch;
+    }
+    search_options['callbackArgs'] = callback_args;
+    if (obj.displayMarkers) {
+      search_options['count'] = obj.maxRecords;
+    }
+    else {
+      search_options['count'] = 0;
+    }
+
+    // if this is a dynamic or tile call, we expect a bounds.
+    // if no bounds were given, get the curernt bounds from the map
+    if (dynamic || tile) {
+      callback_args['bounds'] = args.hasOwnProperty('bounds')? args['bounds'] : obj.map.getBounds();
+      search_options['filterAddendum'] = mapView_CalculateBoundsAddendum(obj, callback_args['bounds']);
+    }
+    // otherwise, we only pass along bounds if they were explicitely given
+    else if (args.hasOwnProperty('bounds')) { callback_args['bounds'] = args['bounds']; }
+
+    // partial (individual tile) queries will not cancel each other out
+    if (!tile) {
+      // kill any previous dynamic requests first!
+      obj.cancelAjaxCalls();
+    }
+
+    // perform the actual search
+    ajax_handler = search.doSearch(search_options);
+
+    if (dynamic) {
+      obj.ajaxHandlers.push(ajax_handler);
+    }
   }
 
 
   // helper function, used as a callback function in the
   // map view's doSearch() public function
-  function mapView_DoSearch(count, options) {
-    var obj = options['mapView'];
-    var search_options = options['search_options'];
-    var center = options['center'];
-    var callback = options['callback'];
-    var dynamic; // if the search query is partial/dynamic query
+  function mapView_DoSearch(data, args) {
+    var obj = args['mapView'];
+    var count = data.numFound;
+    var bounds = args.hasOwnProperty('bounds')? args['bounds'] : obj.map.getBounds();
+
+    // center defaults to true
+    var center = args.hasOwnProperty('center')? args['center'] : true;
 
     // if no dynamic option was specified, assume it is false
-    dynamic = options.hasOwnProperty('dynamic')? options['dynamic'] : false;
+    var dynamic = args.hasOwnProperty('dynamic')? args['dynamic'] : false;
 
-    // set the count (which would be 0 otherwise)
-    search_options['count'] = obj.maxRecords;
+    // if no 'tile' option was specified, default to false
+    var tile = args.hasOwnProperty('tile')? args['tile'] : false;
 
-    // if the total number of valid records is greater than the
-    // maximum allowed number of records/markers, set sort to random
-    if (count > obj.maxRecords) {
-      // a trick to show a random collection of records 
-      search_options['sortBy'] = 'random_1';
-    }
-
-    // if this is not a partial query, turn on dynamic marker loading
-    // if the count is greater than the actual number of displayed markers
-    if (!dynamic) {
+    // if this is not a tile/dynamic query
+    if (!dynamic && !tile) {
+      // set the total number or records
+      obj.totalRecords = count;
+      // turn on dynamic loading if the count is greater than the total # of records,
+      // otherwise, turn it off
       obj.dynamicMarkers = count > obj.maxRecords;
     }
 
-    // set our callback to actually load the markers found in the data
-    search_options['callback'] = function(data) {
-      obj.loadMarkers(data, center)
+    if (tile) {
+      mapView_DrawTile({
+        "mapView": obj,
+        "data": data,
+        "bounds": bounds
+      });
+    }
+    else {
+      // delete all previous overlays
+      obj.deleteOverlays();
 
-      // if another callback was specified in the options, go ahead and call
-      // after the markers have been loaded
-      if (typeof(callback) == 'function') {
-        callback(data);
+      if (obj.tileResults) {
+        mapView_LoadRectangles({
+          "mapView": obj,
+          "count": data.numFound,
+          "bounds": bounds,
+          "dynamic": dynamic
+        });
       }
-
-      // if a callback function was defined for the onSearch event hook
-      if (typeof(obj.onSearch) == 'function') {
-        obj.onSearch(obj);
+      else {
+        obj.loadMarkers(data, center);
       }
-    };
+    }
 
-    // clear any existing markers
-    obj.deleteOverlays();
+    // if we have a full-on search, trigger the onSearch hook function
+    if (!dynamic && typeof(obj.onSearch) == 'function') {
+      obj.onSearch(obj);
+    }
 
-    obj.search.doSearch(search_options);
   }
 
 
-  function mapView_LoadByTiles(obj) {
-    // determine our initial bounds
-    var bounds = obj.map.getBounds();
+  function mapView_CalculateBoundsAddendum(obj, bounds, tile_options) {
+    var filter_addendum = "";
+    var northeast = bounds.getNorthEast(); // LatLng top-right corner
+    var southwest = bounds.getSouthWest(); // LatLng bottom-left corner
+    var max_lat;
+    var max_lng;
+    var min_lat;
+    var min_lng;
 
-    // how many tiles? (rows & columns)
-    var tile_rows = obj.tileRows;
-    var tile_cols = obj.tileCols;
-    
+    // extend the default tile options with those passed as an argument
+    tile_options = $.extend({}, $.DwCMapView.defaultTileOptions, tile_options);
+
+    // figure out the min/max latitude
+    if (northeast.lat() > southwest.lat()) {
+      max_lat = northeast.lat();
+      min_lat = southwest.lat();
+    }
+    else {
+      max_lat = southwest.lat();
+      min_lat = northeast.lat();
+    }
+
+    // figure out the min/max longitude
+    if (northeast.lng() > southwest.lng()) {
+      max_lng = northeast.lng();
+      min_lng = southwest.lng();
+    }
+    else {
+      max_lng = southwest.lng();
+      min_lng = northeast.lng();
+    }
+
+    // add a filter clause for the latitude
+    filter_addendum += solrEscapeValue(obj.latitudeField);
+    filter_addendum += ":[";
+    filter_addendum += solrEscapeValue(min_lat);
+    filter_addendum += " TO ";
+    filter_addendum += solrEscapeValue(max_lat);
+    filter_addendum += "]";
+
+    filter_addendum += " AND ";
+
+    // check if the bounds box spans the 180th longitude
+    if (northeast.lng() < southwest.lng()) {
+      filter_addendum += "(";
+      filter_addendum += solrEscapeValue(obj.longitudeField);
+      filter_addendum += ":";
+      filter_addendum += "[" + solrEscapeValue(max_lng) + " TO 180]";
+      filter_addendum += " OR ";
+      filter_addendum += solrEscapeValue(obj.longitudeField);
+      filter_addendum += ":";
+      filter_addendum += "[\-180 TO " + solrEscapeValue(min_lng) + "]";
+      filter_addendum += ")";
+    }
+    else {
+      filter_addendum += solrEscapeValue(obj.longitudeField);
+      filter_addendum += ":";
+      filter_addendum += "[";
+      filter_addendum += solrEscapeValue(min_lng);
+      filter_addendum += " TO ";
+      filter_addendum += solrEscapeValue(max_lng);
+      filter_addendum += "]";
+    }
+
+    // add a special filter for any side that is exclusive
+    // (i.e. should not be included in the result set)
+    if (!tile_options['northInclusive']) {
+      filter_addendum += " AND NOT " + obj.latitudeField + ":" + northeast.lat();
+    }
+    if (!tile_options['southInclusive']) {
+      filter_addendum += " AND NOT " + obj.latitudeField + ":" + southwest.lat();
+    }
+    if (!tile_options['eastInclusive']) {
+      filter_addendum += " AND NOT " + obj.longitudeField + ":" + northeast.lng();
+    }
+    if (!tile_options['westInclusive']) {
+      filter_addendum += " AND NOT " + obj.longitudeField + ":" + southwest.lng();
+    }
+
+    return filter_addendum;
   }
+
+  // draw markers and the rectangle for teh given bounds
+  function mapView_DrawTile(args) {
+    // required args
+    var obj = args['mapView'];
+    var data = args['data'];
+    var bounds = args['bounds'];
+    var rectangle_options = args.hasOwnProperty('rectangleOptions')? args['rectangleOptions'] : {};
+    var rectangle_values = args.hasOwnProperty('rectangleValues')? args['rectangleValues'] : {};
+    var rectangle;
+
+    if (obj.displayMarkers) {
+      obj.loadMarkers(data, false)
+    }
+    if (obj.displayGrid) {
+      // add the rectangle
+      rectangle = obj.addRectangle(bounds, rectangle_options, rectangle_values);
+      rectangle.set('recordCount', data.numFound);
+    }
+  }
+
+
+  // queries, loads markers and draws a rectangle over the given bounds
+  function mapView_LoadTile(args) {
+    // required options
+    var obj = args['mapView'];
+    var bounds = args['bounds'];
+
+    var search = args.hasOwnProperty('search')? args['search'] : obj.search;
+    var search_options = args.hasOwnProperty('searchOptions')? args['searchOptions'] : {};
+    var rectangle_options = args.hasOwnProperty('rectangleOptions')? args['rectangleOptions'] : {};
+    var dynamic = args.hasOwnProperty('dynamic')? args['dynamic'] : false;
+
+    search_options['filterAddendum'] = mapView_CalculateBoundsAddendum(obj, bounds, rectangle_options);
+
+    mapView_Search({
+      "mapView": obj,
+      "search": search,
+      "search_options": search_options,
+      "bounds": bounds,
+      "dynamic": dynamic,
+      "center": false,
+      "tile": true
+    });
+
+  }
+
+
+  function mapView_LoadRectangles(args) {
+    var obj = args['mapView'];
+
+    var count = args.hasOwnProperty('totalRecords')? args['totalRecords'] : obj.totalRecords;
+    var bounds = args.hasOwnProperty('bounds')? args['bounds'] : obj.map.getBounds();
+    var dynamic = args.hasOwnProperty('dynamic')? args['dynamic'] : false;
+
+    var span = bounds.toSpan();
+    var total_width = span.lng();
+    var total_height = span.lat();;
+    var tile_width, tile_height;
+    var north, east, south, west;
+    var northeast, southwest;
+    var tile_bounds;
+    var rectangle;
+    var x = 1;
+
+    // width (in degrees) of each tile
+    tile_width = total_width / obj.tileCols;
+
+    // height (in degrees) of each tile
+    tile_height = total_height / obj.tileRows;
+
+    // loop through each column (left-to-right)
+    while (x <= obj.tileCols) {
+      var y = 1;
+      var rectangle_options = {};
+      if (x == 1) {
+        west = bounds.getSouthWest().lng();
+        rectangle_options['westInclusive'] = true;
+      } 
+      else {
+        west += tile_width;
+        rectangle_options['westInclusive'] = false;
+      }
+
+      if (x == obj.tileCols) { east = bounds.getNorthEast().lng(); }
+      else { east = west + tile_width;}
+
+      // loop through rows, bottom-up
+      while (y <= obj.tileRows) {
+        if (y == 1) {
+          south = bounds.getSouthWest().lat();
+          rectangle_options['southInclusive'] = true;
+        }
+        else {
+          south += tile_height;
+          rectangle_options['southInclusive'] = false;
+        }
+
+        if (y == obj.tileRows) { north = bounds.getNorthEast().lat(); }
+        else { north = south + tile_height; }
+
+        // load the tile
+        
+        southwest = new google.maps.LatLng(south, west);
+        northeast = new google.maps.LatLng(north, east);
+        tile_bounds = new google.maps.LatLngBounds(southwest, northeast);
+
+        mapView_LoadTile({
+         "mapView": obj,
+         "bounds": tile_bounds,
+         "rectangleOptions": rectangle_options,
+         "dynamic": dynamic
+        });
+
+        y++;
+      }
+
+      x++;
+    }
+  }
+
+
+
+
+
+  /***************************************************************************
+   * DwCFieldView
+   *
+   * Creates a detailed view for a single field found within the
+   * Darwin Core Database
+   ***************************************************************************/
+
+  $.DwCFieldView = function(element, options) {
+
+    this.options = {};
+
+    // store this object instance in the main element's .data() attribute
+    element.data('DwCFieldView', this);
+
+    this.init = function(element, option) {
+
+      // merge default options and options passed into the function
+      this.options = $.extend({}, $.DwCFieldView.defaultOptions, options);
+
+      // create a handle on the DOM element
+      this.element = element;
+
+      // event hooks
+      this.onInit = this.options.onInit;
+      this.onShow = this.options.onShow;
+      this.onHide = this.options.onHide;
+
+      fieldView_init(this);
+
+      // set up an onInit/onLoad hook if an onInit function was defined
+      if (typeof(this.onInit) == 'function') {
+        this.onInit(this);
+      }
+
+    }
+
+  
+  /***************************************************************************
+   * DwCFieldView - Begin Public Functions
+   ***************************************************************************/
+
+   // this.pubFunction = function() {}
+
+
+  /***************************************************************************
+   * DwCFieldView - Final Initialization Call
+   ***************************************************************************/
+
+    this.init(element, options);
+
+  };
+
+
+  /***************************************************************************
+   * DwCFieldView - Namespace Declaration
+   ***************************************************************************/
+
+  $.fn.DwCFieldView = function(options) {
+    return this.each(function() {
+      (new $.DwCFieldView($(this), options));
+    });
+  };
+
+
+  /***************************************************************************
+   * DwCFieldView - Default Options
+   ***************************************************************************/
+
+  $.DwCFieldView.defaultOptions = {
+    onInit: null,
+    onShow: null,
+    onHide: null
+  };
+
+
+  /***************************************************************************
+   * DwCFieldView - Begin Private Functions
+   ***************************************************************************/
+
+  function fieldView_init(obj) {
+  }
+
+
+
+
+
+  /***************************************************************************
+   * DwCFieldsView
+   *
+   * Creates a table with a summary of all available fields in the
+   * Darwin Core database.
+   ***************************************************************************/
+
+  $.DwCFieldsView = function(element, options) {
+
+    this.options = {};
+
+    // store this object instance in the main element's .data() attribute
+    element.data('DwCFieldsView', this);
+
+    this.init = function(element, option) {
+      var obj = this;
+
+      // merge default options and options passed into the function
+      this.options = $.extend({}, $.DwCFieldsView.defaultOptions, options);
+
+      // create a handle on the DOM element
+      this.element = element;
+      
+      // set options as state variables
+      this.fields = this.options.fields;
+      this.gatewayAddress = this.options.gatewayAddress;
+      this.baseDir = this.options.baseDir;
+      this.attributes = this.options.attributes;
+
+      // event hooks
+      this.onInit = this.options.onInit;
+      this.onShow = this.options.onShow;
+      this.onHide = this.options.onHide;
+      this.onRowClick = this.options.onRowClick;
+
+      // some internal state variables
+      this.fieldsTable = null;
+
+      // if no DwCFields object was passed, create one
+      if (!this.fields) {
+        this.fields = new $.DwCViews.DwCFields({
+          'gatewayAddress': this.gatewayAddress,
+          'basDir': this.baseDir,
+        });
+      }
+
+      // set up the basic HTML/DOM skeleton
+      fieldsView_init(this);
+
+      // go ahead and query for the fields 
+      this.fields.fetchFields(function(data) { obj.populateFields(data) });
+
+      // set up an onInit/onLoad hook if an onInit function was defined
+      if (typeof(this.onInit) == 'function') {
+        this.onInit(this);
+      }
+
+    }
+
+  
+  /***************************************************************************
+   * DwCFieldsView - Begin Public Functions
+   ***************************************************************************/
+
+    this.isHidden = function() {
+      return !this.element.is(":visible");
+    }
+
+    // hide this plugin
+    this.hide = function() {
+      var obj = this;
+      // don't do anything if the map view is already hidden
+      if (!this.isHidden()) {
+        // if a callback function was specified for the onHide() event hook
+        if (typeof(this.onHide) == 'function') {
+          obj.onHide(this);
+        }
+        this.element.hide();
+      }
+    }
+
+
+    // show this plugin (only if it is hidden)
+    this.show = function() {
+      var obj = this;
+
+      // do nothing if the map view is already visible
+      if (this.isHidden()) {
+        this.element.show(function() {
+          // if a callback function was specified for the onShow() event hook
+          if (typeof(obj.onShow) == 'function') {
+            obj.onShow(obj);
+          }
+        });
+      }
+    }
+
+    this.populateFields = function(data) {
+      var obj = this;
+      var tbody = obj.fieldsTable.find('tbody:first');
+      var row_class = 1; // alternate row classes
+      var first_row = true;
+
+      tbody.empty();
+      
+      $.each(data, function(field_name, field_info) {
+        var row = $('<tr></tr>');
+        row.addClass('DwCFieldsView_FieldRow' + row_class);
+        $.each(obj.attributes, function(attr_name, attr_label) {
+          var value = $('<td></td>');
+          if (attr_name == '__field_name__') {
+            value.addClass('DwCFieldsView_FieldName');
+            value.text(field_name);
+          }
+          else {
+            value.addClass('DwCFieldsView_AttributeValue');
+            if (field_info.hasOwnProperty(attr_name)) {
+              value.text(field_info[attr_name].toString());
+            }
+          }
+          row.append(value);
+        });
+        // if we have an onRowClick hook function
+        if (typeof(obj.onRowClick) == 'function') {
+          // set some special classes
+          row.addClass('DwCFieldsView_ClickableRow');
+          // attach the event hook
+          row.click(function() {
+            obj.onRowClick(obj, row);
+          });
+        }
+        tbody.append(row);
+        // toggle row class
+        row_class = (row_class % 2) + 1;
+        // susbsequent rows will not be the first
+        first_row = false;
+      });
+    }
+
+  /***************************************************************************
+   * DwCFieldsView - Final Initialization Call
+   ***************************************************************************/
+
+    this.init(element, options);
+
+  };
+
+
+  /***************************************************************************
+   * DwCFieldsView - Namespace Declaration
+   ***************************************************************************/
+
+  $.fn.DwCFieldsView = function(options) {
+    return this.each(function() {
+      (new $.DwCFieldsView($(this), options));
+    });
+  };
+
+
+  /***************************************************************************
+   * DwCFieldsView - Default Options
+   ***************************************************************************/
+
+  $.DwCFieldsView.defaultOptions = {
+    fields: null,
+    attributes: {
+      '__field_name__': 'Name',
+      'type': 'Type',
+      'distinct': 'Distinct',
+      'stored': 'Stored',
+      'multivalued': 'Multi-Values',
+      'label': 'Label'
+    },
+    getewayAddress: '',
+    baseDir: '/gateway/',
+    onInit: null,
+    onShow: null,
+    onHide: null,
+    onRowClick: function (obj, row) {
+      return true;
+    }
+  };
+
+
+  /***************************************************************************
+   * DwCFieldsView - Begin Private Functions
+   ***************************************************************************/
+
+  function fieldsView_init(obj) {
+    var table;
+    var table_header;
+
+    obj.element.addClass('DwCFieldsView_Container');
+
+    table = obj.element.find('table.DwCFieldsView_Table:first');
+
+    if (table.length == 0) {
+      table = $('<table cellpadding="0" cellspacing="0" class="DwCFieldsView_Table"></table>');
+      obj.element.append(table);
+    }
+    obj.fieldsTable = table;
+
+    table_header = obj.fieldsTable.find('thead:first');
+    if (table_header.length == 0) {
+      table_header = $('<thead></thead>');
+      obj.fieldsTable.prepend(table_header);
+    }
+    table_header.append('<tr class="DwCFieldsView_AttributeTitlesRow"></tr>');
+
+    if (obj.fieldsTable.find('tbody:first').length == 0) {
+      obj.fieldsTable.append('<tbody></tbody>');
+    }
+
+    // populate the titles row
+    fieldsView_BuildAttributesHeader(obj);
+  }
+
+
+  function fieldsView_BuildAttributesHeader(obj) {
+    var titles_row = obj.fieldsTable.find('tr.DwCFieldsView_AttributeTitlesRow:first');
+
+    titles_row.empty();
+
+    $.each(obj.attributes, function(key, value) {
+      var header = $('<th></th>');
+      header.addClass('DwCFieldsView_AttributeTitle');
+      header.text(value);
+      titles_row.append(header);
+    });
+  }
+
 
 
 
@@ -2304,7 +3095,10 @@ TODO:
           }
         }
       }
+      // if no special button click was passed in the options,
+      // only use the global
       else if (typeof(obj.onButtonClick) == 'function') {
+        obj.onButtonClick(obj, button_info['view']);
       }
     });
   }
