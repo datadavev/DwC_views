@@ -75,6 +75,7 @@ div.DwCRecordTable_Container
   border-width: 2px 2px 0px 2px;
   float: left;
   overflow: hidden;
+  overflow-x: auto;
   clear: both;
 }
 
@@ -245,11 +246,12 @@ div.DwCRecordsTable_Container
 {
   width: auto;
   margin: auto;
-  font-size: 12px;
+  font-size: 10.5pt;
   border-style: solid;
   border-color: black;
-  border-width: 2px;
+  border-width: 0px 0px 0px 2px;
   overflow: hidden;
+  overflow-x: auto;
   clear: right;
 }
 
@@ -257,7 +259,6 @@ div.DwCRecordsTable_Container
 table.DwCRecordsTable
 {
   width: 100%;
-  font-size: 10.5pt;
 }
 
 tr.DwCRecordsTable_HeaderRow
@@ -492,6 +493,7 @@ div.DwCViewPicker_Container
   padding: 2px;
   text-align: center;
   float: left;
+  overflow: hidden;
 }
 
 div.DwCViewPicker_Button
@@ -627,8 +629,9 @@ div.DwCMapView_Container
   height: 500px;
   border-style: solid;
   border-color: black;
-  border-width: 2px;
+  border-width: 0px 0px 0px 2px;
   clear: right;
+  overflow: hidden;
 }
 
 
@@ -636,37 +639,59 @@ div.DwCMapView_Container
  * DwCFieldsView Styles
  ******************************************************************/
 
+/* <div> container around the actual fields <table> element */
 div.DwCFieldsView_Container
 {
   width: auto;
   margin: auto;
   border-style: solid;
   border-color: black;
-  border-width: 2px;
+  border-width: 0px 0px 0px 2px;
+  overflow: hidden;
+  overflow-x: auto;
   clear: right;
   font-size: 10.5pt;
 }
 
+/* the actual fields <table> */
 table.DwCFieldsView_Table
 {
   width: 100%;
+  border-style: none;
 }
 
+/* the table header row that contains each column's title */
 tr.DwCFieldsView_AttributeTitlesRow
 {
   background-color: {{ header_background_color }};
 }
 
+/* all field rows in the fields table */
+tr.DwCFieldsView_FieldRow
+{
+}
+
+/* all cells in the fields listing */
+td.DwCFieldsView_FieldRow
+{
+  border-style: solid;
+  border-color: #000000;
+  border-width: 0px 0px 2px 0px;
+}
+
+/* all even-numbered field rows */
 tr.DwCFieldsView_FieldRow1
 {
   background-color: {{ row1_background_color }};
 }
 
+/* all odd-numbered field rows */
 tr.DwCFieldsView_FieldRow2
 {
   background-color: {{ row2_background_color }};
 }
 
+/* the column title for each field attribute */
 th.DwCFieldsView_AttributeTitle
 {
   padding: 2px 6px 2px 2px;
@@ -676,6 +701,8 @@ th.DwCFieldsView_AttributeTitle
   font-size: 0.95em;
 }
 
+/* <td> element containing the value of each field attribute
+ * (besides the field name */
 td.DwCFieldsView_AttributeValue
 {
   padding: 2px 6px 2px 4px;
@@ -685,6 +712,7 @@ td.DwCFieldsView_AttributeValue
   font-size: 0.85em;
 }
 
+/* <td> element containing the name of the field */
 td.DwCFieldsView_FieldName
 {
   padding: 2px 6px 2px 4px;
@@ -699,30 +727,38 @@ td.DwCFieldsView_FieldName:after
   content: ':';
 }
 
+/* the first <tr> element (first field listing) in the fields table */
 tr.DwCFieldsView_FirstRow
 {
 }
 
+/* the last <tr> element (last field listing) in the fields table */
 tr.DwCFieldsView_LastRow
 {
 }
 
+/* all <td> elements in the first fields row */
 td.DwCFieldsView_FirstRow
 {
 }
 
+/* all <td> elements in the last fields row */
 td.DwCFieldsView_LastRow
 {
+  border-bottom-width: 0px;
 }
 
+/* all <td> elements in the first column of the fields table */
 td.DwCFieldsView_FirstColumn
 {
 }
 
+/* all <td> elements in the last column of the fields table */
 td.DwCFieldsView_LastColumn
 {
 }
 
+/* any fields row that has a clickable event bound to it */
 tr.DwCFieldsView_ClickableRow
 {
 }
@@ -730,6 +766,16 @@ tr.DwCFieldsView_ClickableRow:hover
 {
   cursor: pointer;
   background-color: gray;
+}
+
+/* the <td> cell containing the field toggle checkbox */
+td.DwCFieldsView_FieldToggleCheckBox
+{
+}
+
+/* the actual checkbox used to toggle fields in the associated records table */
+input.DwCFieldsView_FieldToggleCheckBox
+{
 }
 
 

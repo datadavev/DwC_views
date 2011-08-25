@@ -348,8 +348,8 @@ TODO:
           obj.fieldsViewOptions['baseDir'] = obj.baseDir;
         }
 
-        // make this records table aware of the single record table
-        if (obj.fieldsView && obj.fieldsViewOptions['recordsTable'] == null) {
+        // make this records table aware of the records table
+        if (obj.recordsTable && obj.fieldsViewOptions['recordsTable'] == null) {
           obj.fieldsViewOptions['recordsTable'] = obj.recordsTable;
         }
 
@@ -610,6 +610,49 @@ TODO:
 
 
   /***************************************************************************
+   * DwCField - represents a single field from the Darwin Core Database
+   ***************************************************************************/
+
+  $.DwCViews.DwCField = function(options) {
+
+    this.options = $.extend({}, $.DwCViews.DwCField.defaultOptions, options);
+
+    this.gatewayAddress = this.options.gatewayAddress;
+    this.baseDir = this.options.baseDir;
+    this.callback = this.options.callback;
+    this.fieldName = this.options.fieldName;
+    this.data = this.options.data;
+
+    this.baseURL = this.gatewayAddress + this.baseDir;
+
+    this.fetchField = function(callback) {
+      var obj = this;
+      var url = this.baseURL + "fields/" + this.fieldName;
+
+      callback = typeof(callback) == 'function'? callback : obj.callback;
+
+      $.getJSON(url, function(data) {
+        obj.data = data;
+        if (typeof(callback) == 'function') {
+          callback(data);
+        }
+      });
+    }
+  }
+
+  $.DwCViews.DwCField.defaultOptions = {
+    fieldName: null, // required
+    gatewayAddress: '',
+    baseDir: "/gateway/",
+    data: null,
+    callback: null
+  }
+
+
+
+
+
+  /***************************************************************************
    * DwCFields - represents a listing of fields found within the records
    * of the Darwin Core Database
    ***************************************************************************/
@@ -715,7 +758,7 @@ TODO:
 
 
   // hide the table (if not already hidden)
-  this.showTable = function() {
+  this.show = function() {
     var element = this.element;
     element.slideDown('slow', function() {
       element.show();
@@ -724,7 +767,7 @@ TODO:
 
 
   // show the table (if it is hidden)
-  this.hideTable = function() {
+  this.hide = function() {
     var element = this.element;
     element.slideUp('slow', function() {
       element.hide();
@@ -924,7 +967,7 @@ TODO:
 
     // set the hide button to "hide" this table when clicked
     hide_button.click(function() {
-      obj.hideTable();
+      obj.hide();
     });
 
     // bind a record fetch event when the user presses the 'enter' key
@@ -967,10 +1010,11 @@ TODO:
       obj.populateTable(record);
       // show the table automatically, if requested
       if (show_table && obj.isHidden()) {
-        obj.showTable();
+        obj.show();
       }
     });
   }
+
 
 
 
@@ -1002,14 +1046,17 @@ TODO:
       this.displayRowNums = this.options.displayRowNums;
       this.globalDefaultValue = this.options.globalDefaultValue;
       this.recordTable = this.options.recordTable;
+      this.fieldsView = this.options.fieldsView;
       this.idField = this.options.idField;
+      this.total = 0;
+      this.dbFields = null;
+      this.fieldsMenu = null;
+      this.overlay = null;
+
+      // some event hooks
       this.onInit = this.options.onInit;
       this.onSearch = this.options.onSearch;
       this.onRowClick = this.options.onRowClick;
-      this.total = 0;
-      this.db_fields = null;
-      this.field_menu = null;
-      this.overlay = null;
 
       // build the base Darwin Core Views URL
       this.baseURL = this.options.gatewayAddress + this.options.baseDir;
@@ -1030,7 +1077,7 @@ TODO:
 
       // bind right-click on field headers to the fields context menu
       this.recordsTable.find(".DwCRecordsTable_HeaderRow").bind('contextmenu', function(e) {
-        obj.fields_menu.showMenu(e);
+        obj.fieldsMenu.show(e);
         return false;
       });
 
@@ -1077,7 +1124,7 @@ TODO:
 
         // tag the row with a special ID attribute
         if (obj.idField in record) {
-          row.attr('dwcrecordstable_recordid', record[obj.idField].toString());
+          row.attr('dwc_recordid', record[obj.idField].toString());
         }
 
         // if the row should be clickable
@@ -1176,7 +1223,7 @@ TODO:
 
       // use the existing data cache, if requested (and it exists)
       if (cached && this.search.data != null) {
-        this.refreshData(this.data);
+        this.refreshData(this.search.data);
         // create a hook for the 'onSearch' event
         if (typeof(obj.onSearch) == 'function') {
           obj.onSearch(obj);
@@ -1213,7 +1260,12 @@ TODO:
       prepareHeader(this);
       this.fetchRecords(false);
       prepareFooter(this);
-      this.fields_menu.itemOn('fields', field_info['name']);
+
+      // synchronize the fields context menu
+      if (this.fieldsMenu) { this.fieldsMenu.itemOn('fields', field_info['name']); }
+
+      // synchronize the fields view
+      if (this.fieldsView) { this.fieldsView.syncWithRecordsTable(); }
     }
 
 
@@ -1226,7 +1278,12 @@ TODO:
         prepareHeader(this);
         this.fetchRecords(true);
         prepareFooter(this);
-        this.fields_menu.itemOff('fields', field_name);
+
+        // synchronize the fields context menu
+        this.fieldsMenu.itemOff('fields', field_name);
+
+        // synchronize the fields view
+        if (this.fieldsView) { this.fieldsView.syncWithRecordsTable(); }
       }
     }
 
@@ -1246,11 +1303,12 @@ TODO:
     // will simply toggle the sort order.
     this.sortByField = function(field_name) {
       // are we reordering?
-      if (this.sortBy == field_name) {
-        this.sortOrder = (this.sortOrder == "asc"? "desc" : "asc");
+      if (this.search.sortBy == field_name) {
+        // toggle search order
+        this.search.sortOrder = (this.search.sortOrder == "asc"? "desc" : "asc");
       }
       else {
-        this.sortBy = field_name;
+        this.search.sortBy = field_name;
       }
       this.fetchRecords(false);
     }
@@ -1330,13 +1388,14 @@ TODO:
     displayRowNums: true,
     globalDefaultValue: '',
     recordTable: null,
+    fieldsView: null,
     idField: 'id',
     onInit: null,
     onSearch: null,
     onRowClick: function(records_table, row) {
       // this click will do nothing if there is no associated record table
       if (records_table.recordTable != null) {
-        id = row.attr('dwcrecordstable_recordid');
+        id = row.attr('dwc_recordid');
         records_table.recordTable.setRecordID(id, true);
       }
     },
@@ -1534,7 +1593,7 @@ TODO:
   function fetchFieldInfo(obj) {
     url = obj.baseURL + "fields";
     $.getJSON(url, function(db_fields) {
-      obj.db_fields = db_fields;
+      obj.dbFields = db_fields;
       createFieldsMenu(obj, db_fields);
     });
   }
@@ -1653,7 +1712,7 @@ TODO:
       "overlay": obj.overlay
     });
 
-    obj.fields_menu = menu.data("DwCContextMenu");
+    obj.fieldsMenu = menu.data("DwCContextMenu");
   }
 
 
@@ -2710,6 +2769,8 @@ TODO:
       this.gatewayAddress = this.options.gatewayAddress;
       this.baseDir = this.options.baseDir;
       this.attributes = this.options.attributes;
+      this.fieldView = this.options.fieldView;
+      this.recordsTable = this.options.recordsTable;
 
       // event hooks
       this.onInit = this.options.onInit;
@@ -2719,6 +2780,12 @@ TODO:
 
       // some internal state variables
       this.fieldsTable = null;
+
+      // if there is an associated recordsTable, make sure
+      // that it is aware of this fields view
+      if (this.recordsTable) {
+        this.recordsTable.fieldsView = this;
+      }
 
       // if no DwCFields object was passed, create one
       if (!this.fields) {
@@ -2784,26 +2851,92 @@ TODO:
       var tbody = obj.fieldsTable.find('tbody:first');
       var row_class = 1; // alternate row classes
       var first_row = true;
+      var row;
 
       tbody.empty();
       
-      $.each(data, function(field_name, field_info) {
-        var row = $('<tr></tr>');
+      $.each(data, function(field_name, field_attrs) {
+        var cell, checkbox;
+        var first_column = true;
+        row = $('<tr></tr>');
+
+        // generic row class
+        row.addClass('DwCFieldsView_FieldRow');
+        // add an alternating row class
         row.addClass('DwCFieldsView_FieldRow' + row_class);
+
+        // extra css class if this is the first row
+        if (first_row) { row.addClass('DwCFieldsView_FirstRow'); }
+
+        // if this fields view is bound to a records table,
+        // create checkmarks in order to toggle the fields on/off
+        if (obj.recordsTable) {
+          cell = $('<td></td>');
+          cell.addClass('DwCFieldsView_AttributeValue');
+          cell.addClass('DwCFieldsView_FieldToggleCheckBox');
+          checkbox = $('<input type="checkbox" />');
+          checkbox.addClass('DwCFieldsView_FieldToggleCheckBox');
+          // create a "field" attribute for reference with callback functions
+          checkbox.attr('dwc_fieldname', field_name);
+          cell.append(checkbox);
+          row.append(cell);
+
+          // set the initial checkbox state
+          if (obj.recordsTable.fields.hasOwnProperty(field_name) &&
+            obj.recordsTable.fields[field_name]['display']) {
+            checkbox.attr('checked', true);
+          }
+
+          // bind the "onChange" event to the button
+          checkbox.change(function() {
+            if (checkbox.attr('checked')) {
+              field_info = {
+                'name': field_name,
+                'display': true
+              }
+              // if there is a proper label, add it
+              if (field_attrs['label']) {
+                field_info['label'] = field_attrs['label'];
+              }
+              obj.recordsTable.addField(field_name, field_info);
+            }
+            else { obj.recordsTable.removeField(field_name); }
+          });
+        }
+
         $.each(obj.attributes, function(attr_name, attr_label) {
-          var value = $('<td></td>');
+          cell = $('<td></td>');
+
+          // general css clas for all field cells
+          cell.addClass('DwCFieldsView_FieldRow');
+
+          // special css class if this is the first row
+          if (first_row) { cell.addClass('DwCFieldsView_FirstRow'); }
+
           if (attr_name == '__field_name__') {
-            value.addClass('DwCFieldsView_FieldName');
-            value.text(field_name);
+            cell.addClass('DwCFieldsView_FieldName');
+            cell.text(field_name);
           }
           else {
-            value.addClass('DwCFieldsView_AttributeValue');
-            if (field_info.hasOwnProperty(attr_name)) {
-              value.text(field_info[attr_name].toString());
+            cell.addClass('DwCFieldsView_AttributeValue');
+            if (field_attrs.hasOwnProperty(attr_name)) {
+              cell.text(field_attrs[attr_name].toString());
             }
           }
-          row.append(value);
+
+          // add a special class if it is the first column
+          if (first_column) {
+            cell.addClass('DwCFieldsView_FirstColumn');
+            // all subsequent columns will not be the first column
+            first_column = false;
+          }
+
+          row.append(cell);
         });
+
+        // attach a special class to the cells in the last column
+        cell.addClass('DwCFieldsView_LastColumn');
+
         // if we have an onRowClick hook function
         if (typeof(obj.onRowClick) == 'function') {
           // set some special classes
@@ -2813,12 +2946,43 @@ TODO:
             obj.onRowClick(obj, row);
           });
         }
+
         tbody.append(row);
+
+        // subsequent rows will not be the first
+        first_row = false;
+
         // toggle row class
         row_class = (row_class % 2) + 1;
-        // susbsequent rows will not be the first
-        first_row = false;
       });
+
+      // add a special class to the last row
+      row.addClass('DwCFieldsView_LastRow');
+      // add a special class to the cells in the last row
+      row.find('td').addClass('DwCFieldsView_LastRow');
+    }
+
+    // analyzes the associated records table and checks all checkboxes
+    // who's associated fields are currently displayed in the records table.
+    // Likewise, it unchecks all other checkboxes.
+    this.syncWithRecordsTable = function() {
+      var obj = this;
+      var checkboxes;
+      // do nothing if there is no associated records table
+      if (this.recordsTable) {
+        // search for all of the field toggle checkboxes
+        checkboxes = this.fieldsTable.find('input.DwCFieldsView_FieldToggleCheckBox[type="checkbox"]');
+        $.each(checkboxes, function(i, checkbox) {
+          var field_name = $(checkbox).attr('dwc_fieldname');
+          if (obj.recordsTable.fields.hasOwnProperty(field_name) &&
+              obj.recordsTable.fields[field_name]['display']) {
+            $(checkbox).attr('checked', 'checked');
+          }
+          else {
+            $(checkbox).removeAttr('checked');
+          }
+        });
+      }
     }
 
   /***************************************************************************
@@ -2849,14 +3013,16 @@ TODO:
     fields: null,
     attributes: {
       '__field_name__': 'Name',
+      'label': 'Label',
       'type': 'Type',
       'distinct': 'Distinct',
       'stored': 'Stored',
-      'multivalued': 'Multi-Values',
-      'label': 'Label'
+      'multivalued': 'Multi-Values'
     },
     getewayAddress: '',
     baseDir: '/gateway/',
+    fieldView: null,
+    recordsTable: null,
     onInit: null,
     onShow: null,
     onHide: null,
@@ -2905,11 +3071,24 @@ TODO:
 
     titles_row.empty();
 
+    // if this fieldsView is bound to a RecordsTable
+    if (obj.recordsTable) {
+      // add an extra checkbox column for turning fields on and off
+      titles_row.append('<th class="DwCFieldsView_AttributeTitle"></th>');
+    }
+
     $.each(obj.attributes, function(key, value) {
       var header = $('<th></th>');
       header.addClass('DwCFieldsView_AttributeTitle');
       header.text(value);
       titles_row.append(header);
+    });
+  }
+
+
+  function fieldsView_BindFieldToggle(obj, button) {
+    button.click(function () {
+      
     });
   }
 
@@ -3143,7 +3322,7 @@ TODO:
    * DwCContextMenu - Begin Public Functions
    ***************************************************************************/
 
-    this.showMenu = function(e) {
+    this.show = function(e) {
       var element = this.element;
       var overflow;
       this.element.css({position: 'absolute', left: e.pageX, top: e.pageY});
@@ -3156,7 +3335,7 @@ TODO:
     }
 
 
-    this.hideMenu = function() {
+    this.hide = function() {
       element = this.element;
       // use a fade-out animation
       element.fadeOut(function() {
@@ -3238,17 +3417,17 @@ TODO:
 
   function bindMenuEvents(obj) {
     obj.element.bind('contextmenu', function(e) {
-      obj.hideMenu();
+      obj.hide();
       return false;
     });
 
     obj.overlay.bind('contextmenu', function(e) {
-      obj.hideMenu();
+      obj.hide();
       return false;
     });
 
     obj.overlay.click(function(e) {
-      obj.hideMenu();
+      obj.hide();
       return false;
     });
   }
@@ -3291,13 +3470,13 @@ TODO:
         // bind custom click event (if specified)
         if (item['click'] != null) {
           item_element.click(function() {
-            obj.hideMenu();
+            obj.hide();
             return item['click']($(this));
           });
         // if no click event was specified, just close the menu
         } else {
           item_element.click(function() {
-            obj.hideMenu();
+            obj.hide();
             return false;
           });
         }
