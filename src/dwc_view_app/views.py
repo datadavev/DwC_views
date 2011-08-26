@@ -71,7 +71,16 @@ def getFieldValues(request, name):
   :returns: JSON structure from the getFieldValues() function as described in https://github.com/vdave/DwC_views/wiki/GatewayAPIs
   :rtype: json
   '''
-  values = gateway.GetFieldValues(name)
+  params = {}
+  if request.GET.has_key('filter'):
+    params['query'] = request.GET['filter']
+  else:
+    params['query'] = "*:*"
+  if request.GET.has_key('count'):
+    params['count'] = atoi(request.GET['count'])
+  else:
+    params['count'] = 1000
+  values = gateway.GetFieldValues(name, **params)
   return HttpResponse(values, mimetype='application/json')
 
 def getRecords(request):

@@ -485,7 +485,7 @@ class SolrConnection:
     return data
   
   
-  def fieldValues(self, name, q="*:*", fq=None, maxvalues=-1):
+  def fieldValues(self, name, q="*:*", fq=None, maxvalues=-1, sort=True):
     '''
     Retrieve the unique values for a field, along with their usage counts.
     http://localhost:8080/solr/select/?q=*:*&rows=0&facet=true&indent=on&wt=python&facet.field=genus_s&facet.limit=10&facet.zeros=false&facet.sort=false
@@ -504,12 +504,15 @@ class SolrConnection:
               'facet.limit':str(maxvalues),
               'facet.zeros':'false',
               'wt':'python',
-              'facet.sort':'false'}
+              'facet.sort':str(sort).lower()}
     if not fq is None:
       params['fq'] = fq
     request = urllib.urlencode(params, doseq=True)
     rsp = self.doPost(self.solrBase+'/select', request, self.formheaders)
     data = eval( rsp.read() )
+    response = data['facet_counts']['facet_fields']
+    response['numFound'] = data['response']['numFound']
+    return response
     return data['facet_counts']['facet_fields']#, data['response']['numFound']
   
   

@@ -8,6 +8,7 @@
 
 '''
 #from google.appengine.api import memcache
+import logging
 from django.utils import simplejson as json
 from django.core.cache import cache
 from solrclient import SolrConnection
@@ -136,7 +137,7 @@ class SOLRGateway:
     return json_dump
 
 
-  def GetFieldValues(self, name):
+  def GetFieldValues(self, name, query="*:*", count=100):
     '''Provide a listing of distinct values and value counts for the given field.
     
     :param name: The name of the field
@@ -145,20 +146,23 @@ class SOLRGateway:
     :rtype: JSON UTF-8 encoded string
     '''
 
-    values = self.__connection.fieldValues(name)
+    values = self.__connection.fieldValues(name, q=query, maxvalues=count)
+    response = {'numRecords':values['numFound'],
+                'values':[]}
+    logging.info(str(values))
     # values are wrapped in 3 levels of lists, exract the inner level
     values = values.items()[0][1]
     # fields and count are originally in a flat, alternating list:
     # i.e. [field1, count, field2, count, field3, count, ...]
     # we must transform them into a list of list "pairs":
     # i.e. [[field1, count], [field2, count], [field3, count], ...]
-    value_pairs = []
+    #value_pairs = []
     i = 0
     while i < len(values):
-      value_pairs.append([values[i], values[i+1]])
+      response['values'].append([values[i], values[i+1]])
       i = i+2
 
-    json_dump = self.__json_encoder(value_pairs)
+    json_dump = self.__json_encoder(response)
     return json_dump
 
   def GetRecords(self, q="*:*", fields="*", orderby=None,
