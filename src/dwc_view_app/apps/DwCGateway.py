@@ -88,33 +88,41 @@ class SOLRGateway:
     return json_dump
 
 
-  def __formatFieldAttributes(self, name):
+  def __formatFieldAttributes(self, field):
 
-    field = self.__fields['fields'][name]
+    field = self.__fields['fields'][field]
 
     f_attributes = {}
     f_attributes['type'] = field['type']
     f_attributes['distinct'] = field['distinct']
     f_attributes['stored'] = field['schema'][2] == 'S'
     f_attributes['multivalued'] = field['schema'][3] == 'M'
-    f_attributes['label'] = ''
+    if field.has_key('label'):
+      f_attributes['label'] = field['label']
 
     return f_attributes
 
 
-  def GetField(self, name):
+  def GetField(self, field, q='*:*', fq=None):
     '''Provide a listing of distinct values and value counts for the given field.
     
-    :param name: The name of the field
-    :type name: string
+    :param field: The name of the field
+    :type field: string
     :returns: Structure as described in https://github.com/vdave/DwC_views/wiki/GatewayAPIs
     :rtype: JSON UTF-8 encoded string
     '''
 
     self.__FetchFields();
 
-    f_attributes = self.__formatFieldAttributes(name)
-    json_dump = self.__json_encoder({ name: f_attributes })
+    # fetch the standard field information
+    f_attributes = self.__formatFieldAttributes(field)
+
+    # add min/max values to the field attributes
+    (min, max) = self.__connection.fieldMinMax(field, q, fq)
+    f_attributes['minvalue'] = min;
+    f_attributes['maxvalue'] = max;
+
+    json_dump = self.__json_encoder({ field: f_attributes })
 
     return json_dump
 
@@ -130,23 +138,23 @@ class SOLRGateway:
 
     fields = {};
     # format our field information
-    for name in self.__fields['fields']:
-      fields[name] = self.__formatFieldAttributes(name)
+    for field in self.__fields['fields']:
+      fields[field] = self.__formatFieldAttributes(field)
 
     json_dump = self.__json_encoder(fields)
     return json_dump
 
 
-  def GetFieldValues(self, name, query="*:*", count=100):
+  def GetFieldValues(self, field, q="*:*", count=100):
     '''Provide a listing of distinct values and value counts for the given field.
     
-    :param name: The name of the field
-    :type name: string
+    :param field: The name of the field
+    :type field: string
     :returns: Structure as described in https://github.com/vdave/DwC_views/wiki/GatewayAPIs
     :rtype: JSON UTF-8 encoded string
     '''
 
-    values = self.__connection.fieldValues(name, q=query, maxvalues=count)
+    values = self.__connection.fieldValues(field, q=q, maxvalues=count)
     response = {'numRecords':values['numFound'],
                 'values':[]}
     logging.info(str(values))
@@ -164,6 +172,25 @@ class SOLRGateway:
 
     json_dump = self.__json_encoder(response)
     return json_dump
+
+
+  def GetFieldHistogram(self, field, q='*:*', nbins=10):
+    '''Provides a histogram representing the distribution of values for a given field.
+    
+    :param field: The name of the field
+    :type field: string
+    :param filter: a solr-compatible query/filter
+    :type filter: string
+    :param bins: the number of equal division into which the field values will be split
+    :type bins: integer
+    :returns: Structure as described in https://github.com/vdave/DwC_views/wiki/GatewayAPIs
+    :rtype: JSON UTF-8 encoded string
+    '''
+
+    json_dump = self.__json_encoder(self.__connection.fieldHistogram(name=field, q=q, nbins=nbins))
+
+    return json_dump
+
 
   def GetRecords(self, q="*:*", fields="*", orderby=None,
                  order="asc", start=0, count=1000):
