@@ -49,6 +49,8 @@ TODO:
       this.viewPickerOptions = this.options.viewPickerOptions;
       this.recordsTable = this.options.recordsTable;
       this.recordsTableOptions = this.options.recordsTableOptions;
+      this.fieldView = this.options.fieldView;
+      this.fieldViewOptions = this.options.fieldViewOptions;
       this.fieldsView = this.options.fieldsView;
       this.fieldsViewOptions = this.options.fieldsViewOptions;
       this.onInit = this.options.onInit;
@@ -108,6 +110,8 @@ TODO:
     recordsTableOptions: null,
     mapView: null,
     mapViewOptions: null,
+    fieldView: null,
+    fieldViewOptions: null,
     fieldsView: null,
     fieldsViewOptions: null,
     onInit: null,
@@ -124,6 +128,7 @@ TODO:
     var search_box;
     var search_button;
     var record_table;
+    var field_view;
     var view_picker;
     var records_table;
     var map_view;
@@ -198,6 +203,44 @@ TODO:
       obj.recordTable = record_table.data('DwCRecordTable');
     }
 
+    /* add a single field view to the suite (if not already present) */
+    if (obj.fieldView == null) {
+      field_view = obj.element.find('div.DwCFieldView_Container');
+      if (field_view.length == 0) {
+        field_view = $('<div class="DwCFieldView_Container"></div>');
+        obj.element.append(field_view);
+      }
+
+      // if special options were specified, make sure that the the parent
+      // gateway server's options are used (unless overridden)
+      if (field_view.data('DwCFieldView') == null) {
+        if (obj.fieldViewOptions) {
+          // if no baseDir was supplied in the options, use the DwCViews baseDir
+          if (obj.fieldViewOptions['gatewayAddress'] == null) {
+            obj.fieldViewOptions['gatewayAddress'] = obj.gatewayAddress;
+          }
+          // if no baseDir was supplied in the options, use the DwCViews baseDir
+          if (obj.fieldViewOptions['baseDir'] == null) {
+            obj.fieldViewOptions['baseDir'] = obj.baseDir;
+          }
+        }
+        // if no options were passed in, set some defaults
+        else {
+          // pass along the baseDir and gatewayAddress
+          obj.fieldViewOptions = {};
+          obj.fieldViewOptions['gatewayAddress'] = obj.gatewayAddress;
+          obj.fieldViewOptions['baseDir'] = obj.baseDir;
+          // do not initialize the table on default (wait for a proper event)
+          obj.fieldViewOptions['loadOnInit'] = false;
+          obj.fieldViewOptions['hideOnInit'] = true;
+        }
+
+        // initialize our record table
+        field_view.DwCFieldView(obj.fieldViewOptions);
+      }
+
+      obj.fieldView = field_view.data('DwCFieldView');
+    }
 
     /* add a view picker container before we add the views*/
     if (obj.viewPicker == null) {
@@ -318,7 +361,6 @@ TODO:
       obj.mapView = map_view.data('DwCMapView');
     }
 
-
     /* add a fields view to the suite (if not already present or set to false) */
     if (obj.fieldsView == null) {
       fields_view = obj.element.find('div.DwCFieldsView_Container');
@@ -348,9 +390,14 @@ TODO:
           obj.fieldsViewOptions['baseDir'] = obj.baseDir;
         }
 
-        // make this records table aware of the records table
-        if (obj.recordsTable && obj.fieldsViewOptions['recordsTable'] == null) {
+        // make this fields view aware of the records table
+        if (obj.recordsTable && obj.fieldViewOptions['recordsTable'] == null) {
           obj.fieldsViewOptions['recordsTable'] = obj.recordsTable;
+        }
+
+        // make this fields view aware of the single field view
+        if (obj.fieldView && obj.fieldViewOptions['fieldView'] == null) {
+          obj.fieldsViewOptions['fieldView'] = obj.fieldView;
         }
 
         // initialize our record table
@@ -359,7 +406,6 @@ TODO:
 
       obj.fieldsView = fields_view.data('DwCFieldsView');
     }
-
 
     // initialize the view picker (if not already initialized)
     // now that we have a handle on all of the views
@@ -621,31 +667,89 @@ TODO:
     this.baseDir = this.options.baseDir;
     this.callback = this.options.callback;
     this.fieldName = this.options.fieldName;
-    this.data = this.options.data;
+    this.filter = this.options.filter;
+    this.maxFieldValues = this.options.maxFieldValues;
+    this.fieldData = this.options.fieldData;
+    this.fieldDataCallback = this.options.fieldDataCallback;
+    this.fieldValues = this.options.fieldValues;
+    this.fieldValuesCallback = this.options.fieldValuesCallback;
+    this.fieldHistogram = this.options.fieldHistogram;
 
     this.baseURL = this.gatewayAddress + this.baseDir;
 
-    this.fetchField = function(callback) {
+    this.fetchAttributes = function(callback) {
       var obj = this;
       var url = this.baseURL + "fields/" + this.fieldName;
 
-      callback = typeof(callback) == 'function'? callback : obj.callback;
+      callback = typeof(callback) == 'function'? callback : obj.fieldDataCallback;
 
       $.getJSON(url, function(data) {
-        obj.data = data;
+        obj.fieldData = data;
         if (typeof(callback) == 'function') {
-          callback(data);
+          callback(this, data);
+        }
+      });
+    }
+
+
+    this.fetchValues = function(callback) {
+      var obj = this;
+      var url = this.baseURL + "fields/" + this.fieldName + "/values";
+
+      // if a limit on field values has been specified
+      if (this.maxFieldValues) {
+        url += "?count=" + this.maxFieldValues;
+      }
+
+      callback = typeof(callback) == 'function'? callback : obj.fieldValuesCallback;
+
+      // if there is a filter, add it to the values request
+      if (this.filter) {
+        url += "?q=" + encodeURIComponent(this.filter);
+      }
+
+      $.getJSON(url, function(data) {
+        obj.fieldValues = data['values'];
+        if (typeof(callback) == 'function') {
+          callback(this, data);
+        }
+      });
+    }
+
+
+    this.fetchHistogram = function(callback) {
+      var obj = this;
+      var url = this.baseURL + "fields/" + this.fieldName + "/histogram";
+
+      callback = typeof(callback) == 'function'? callback : obj.fieldHistogramCallback;
+
+      // if there is a filter, add it to the values request
+      if (this.filter) {
+        url += "?q=" + encodeURIComponent(this.filter);
+      }
+
+      $.getJSON(url, function(data) {
+        obj.fieldHistogram = data;
+        if (typeof(callback) == 'function') {
+          callback(this, data);
         }
       });
     }
   }
 
+
   $.DwCViews.DwCField.defaultOptions = {
     fieldName: null, // required
+    fieldData: null,
+    fieldDataCallback: null,
+    maxFieldValues: null,
+    fieldValues: null,
+    fieldValuesCallback: null,
+    fieldHistogram: null,
+    fieldHistogramCallback: null,
     gatewayAddress: '',
     baseDir: "/gateway/",
-    data: null,
-    callback: null
+    filter: null
   }
 
 
@@ -2677,16 +2781,40 @@ TODO:
       // create a handle on the DOM element
       this.element = element;
 
+      // standard options
+      this.gatewayAddress = this.options.gatewayAddress;
+      this.baseDir = this.options.baseDir;
+      this.filter = this.options.filter;
+      this.attributes = this.options.attributes;
+      this.maxFieldValues = this.options.maxFieldValues;
+      this.wordCloudMaxFontSize = this.options.wordCloudMaxFontSize;
+      this.wordCloudMinFontSize = this.options.wordCloudMinFontSize;
+      this.wordCloudFontUnit = this.options.wordCloudFontUnit;
+
       // event hooks
       this.onInit = this.options.onInit;
       this.onShow = this.options.onShow;
       this.onHide = this.options.onHide;
 
+      // other internal state variables
+      this.field = null;
+      this.fieldTable = null;
+
       fieldView_init(this);
+
+      // do we want to load the data immediately?
+      if (this.fieldName && this.options.loadOnInit) {
+        this.populateFieldView();
+      }
 
       // set up an onInit/onLoad hook if an onInit function was defined
       if (typeof(this.onInit) == 'function') {
         this.onInit(this);
+      }
+
+      // immediately hide this view, if requested
+      if (this.options.hideOnInit) {
+        this.element.css('display', 'none');
       }
 
     }
@@ -2696,7 +2824,69 @@ TODO:
    * DwCFieldView - Begin Public Functions
    ***************************************************************************/
 
-   // this.pubFunction = function() {}
+    // hide the table (if not already hidden)
+    this.show = function() {
+      var element = this.element;
+      element.slideDown('slow', function() {
+        element.show();
+      });
+    }
+
+
+    // show the table (if it is hidden)
+    this.hide = function() {
+      var element = this.element;
+      element.slideUp('slow', function() {
+        element.hide();
+      });
+    }
+
+
+    // set/change the which field the field view will display
+    this.setField = function(field_name, load, show) {
+      // we don't need to do anything if it's already set to this field
+      if (this.fieldName != field_name) {
+
+        // set some defaults
+        load = typeof('load') != 'undefined'? load : true;
+        show = typeof('show') != 'undefined'? show: true;
+
+        this.field = null;
+        this.fieldName = field_name;
+
+        // load the data immediately (if specified)
+        if (load) { this.populateFieldView(); }
+        // show the table once the data is loaded (if specified)
+        if (show) { this.show(); }
+      }
+    }
+
+
+    // fill-out all of the information in the field view
+    this.populateFieldView = function() {
+      var obj = this;
+
+      // create the DwCField object (if necessary)
+      fieldView_BuildField(this);
+
+      // empty the table (to make way for the new data)
+      fieldView_EmptyView(this);
+
+      if (!this.field.fieldData) {
+        this.field.fetchAttributes(function() {
+          fieldView_PopulateAttributes(obj);
+        });
+      }
+      else { fieldView_PopulateAttributes(obj); }
+
+      // make sure that we have the field values for the word cloud
+      if (!this.field.fieldData) {
+        this.field.fetchValues(function() {
+          fieldView_BuildWordCloud(obj);
+        });
+      }
+      else { fieldView_BuildWordCloud(obj); }
+    }
 
 
   /***************************************************************************
@@ -2724,6 +2914,22 @@ TODO:
    ***************************************************************************/
 
   $.DwCFieldView.defaultOptions = {
+    gatewayAddress: "",
+    baseDir: "/gateway/",
+    filter: null,
+    attributes: {
+      label: "Server Label",
+      type: "Data Type",
+      distinct: "Distinct Values",
+      minvalue: "Minimum Value",
+      maxvalue: "Maximum Value"
+    },
+    maxFieldValues: 45,
+    wordCloudMaxFontSize: 3,
+    wordCloudMinFontSize: 0.80,
+    wordCloudFontUnit: 'em',
+    loadOnInit: true,
+    hideOnInit: false,
     onInit: null,
     onShow: null,
     onHide: null
@@ -2735,6 +2941,193 @@ TODO:
    ***************************************************************************/
 
   function fieldView_init(obj) {
+    var table, thead, tr, th, div;
+
+    obj.element.addClass('DwCFieldView_Container');
+
+    table = obj.element.find('table.DwCFieldView_Table:first');
+
+    if (table.length == 0) {
+      table = $('<table cellpadding="0" cellspacing="0" class="DwCFieldView_Table"></table>');
+      obj.element.append(table);
+    }
+    obj.fieldTable = table;
+
+    thead = obj.fieldTable.find('thead:first');
+    if (thead.length == 0) {
+      thead = $('<thead></thead>');
+      obj.fieldTable.prepend(thead);
+    }
+
+    tr = $('<tr class="DwCFieldView_ControlRow"></tr>');
+    thead.append(tr);
+    th = $('<th colspan="2"></th>');
+    tr.append(th);
+    div = $('<div class="DwCFieldView_Title"></div>');
+    th.append(div);
+    div = $('<div class="DwCFieldView_HideButton"></div>');
+    // this is the hide button, bind the onClick event to hide the view
+    div.click(function() {
+      obj.hide();
+    });
+    th.append(div);
+
+    if (obj.fieldTable.find('tbody:first').length == 0) {
+      obj.fieldTable.append('<tbody></tbody>');
+    }
+  }
+
+
+  // if the DwCField object does not exist, build it
+  function fieldView_BuildField(obj) {
+    if (!obj.field) {
+      obj.field = new $.DwCViews.DwCField({
+        "fieldName": obj.fieldName,
+        "gatewayAddress": obj.gatewayAddress,
+        "baseDir": obj.baseDir,
+        "maxFieldValues": obj.maxFieldValues
+      });
+    }
+  }
+
+
+  function fieldView_EmptyView(obj) {
+    var tbody = obj.fieldTable.find('tbody:last');
+    tbody.empty();
+  }
+
+
+  function fieldView_PopulateAttributes(obj) {
+    var data = obj.field.fieldData[obj.fieldName];
+    var thead, tbody, tr, td;
+    var row_class = 2; // the field name will be row class 1
+
+    tbody = obj.fieldTable.find('tbody:last');
+    if (tbody.length == 0) {
+      tbody = $('<tbody></tbody>');
+      obj.fieldTable.append(tbody);
+    }
+
+    // show the field name
+    tr = $('<tr></tr>');
+    tr.addClass('DwCFieldView_AttributeRow');
+    tr.addClass('DwCFieldView_AttributeRow1');
+    td = $('<td class="DwCFieldView_AttributeTitle">Field Name</td>');
+    tr.append(td);
+    td = $('<td class="DwCFieldView_AttributeValue"></td>');
+    td.text(obj.fieldName);
+    tr.append(td);
+    tbody.append(tr);
+
+    // loop through each attribute and display it
+    if (obj.attributes) {
+      // if a dictionary of attributes was specified, show only those
+      $.each(obj.attributes, function(attr, label) {
+        tr = $('<tr></tr>');
+        tr.addClass('DwCFieldView_AttributeRow');
+        tr.addClass('DwCFieldView_AttributeRow' + row_class);
+        td = $('<td></td>');
+        td.text(label);
+        td.addClass('DwCFieldView_AttributeTitle');
+        tr.append(td);
+        td = $('<td></td>');
+        td.addClass('DwCFieldView_AttributeValue');
+        if (data.hasOwnProperty(attr)) { td.text(data[attr].toString()); }
+        else { td.addClass('DwCFieldView_NullValue'); }
+        tr.append(td);
+        tbody.append(tr);       
+
+        // toggle the row class
+        row_class = (row_class % 2) + 1;
+      });
+    }
+    else {
+      // if no attributes were specified, show all that were returned
+      // in the field query
+      $.each(data, function(attr, value) {
+        tr = $('<tr></tr>');
+        tr.addClass('DwCFieldView_AttributeRow');
+        tr.addClass('DwCFieldView_AttributeRow' + row_class);
+        td = $('<td></td>');
+        td.text(attr.toString());
+        td.addClass('DwCFieldView_AttributeTitle');
+        tr.append(td);
+        td = $('<td></td>');
+        td.addClass('DwCFieldView_AttributeValue');
+        td.text(value.toString());
+        tr.append(td);
+        tbody.append(tr);
+
+        // toggle the row class
+        row_class = (row_class % 2) + 1;
+      });
+    }
+  }
+
+
+  function fieldView_BuildWordCloud(obj)
+  {
+    var wcloud_title;
+    var wcloud_container;
+    var wcloud_value;
+    var tr;
+
+    // if the word cloud title bar doesn't exist, add it
+    wcloud_title = obj.fieldTable.find('td.DwCFieldView_WordCloudTitle:last');
+    if (wcloud_title.length == 0) {
+      tr = $('<tr></tr>');
+      tr.addClass('DwCFieldView_WordCloud');
+      wcloud_title = $('<td colspan="2"></td>');
+      wcloud_title.addClass('DwCFieldView_WordCloudTitle');
+      tr.append(wcloud_title);
+      obj.fieldTable.append(tr);
+    }
+
+    // if the word cloud container doesn't exit, add it
+    wcloud_container = obj.fieldTable.find('td.DwCFieldView_WordCloudValue:last');
+    if (wcloud_container.length == 0) {
+      tr = $('<tr></tr>');
+      tr.addClass('DwCFieldView_WordCloud');
+      wcloud_container = $('<td colspan="2"></td>');
+      wcloud_container.addClass('DwCFieldView_WordCloudValue');
+      tr.append(wcloud_container);
+      obj.fieldTable.append(tr);
+    }
+
+    $.each(obj.field.fieldValues, function(index, value_pair) {
+      wcloud_value = $('<span></span>');
+      wcloud_value.addClass('DwCFieldView_WordCloudValue');
+      wcloud_value.text(value_pair[0]);
+      // scale the size of the font
+      wcloud_value.css('font-size', fieldView_CalculateFontSize(obj, value_pair[1]));
+      wcloud_container.append(wcloud_value);
+    });
+  }
+
+
+  function fieldView_CalculateFontSize(obj, value) {
+    // calculate the most and least frequent terms
+    var min, max;
+    $.each(obj.field.fieldValues, function(index, value_pair) {
+      if (typeof(min) == 'undefined' || value_pair[1] < min) {
+        min = value_pair[1];
+      }
+      if (typeof(max) == 'undefined' || value_pair[1] > max) {
+        max = value_pair[1];
+      }
+    });
+    
+    var percent = calculateHistogramPercentage({
+      "minvalue": min,
+      "maxvalue": max,
+      "value": value
+    });
+    var font_size = histogramPercentageToRange({
+      "floor": obj.wordCloudMinFontSize,
+      "ceiling": obj.wordCloudMaxFontSize,
+      "value": percent
+    });
+    return font_size + obj.wordCloudFontUnit;
   }
 
 
@@ -2857,8 +3250,12 @@ TODO:
       
       $.each(data, function(field_name, field_attrs) {
         var cell, checkbox;
+        var field_info;
         var first_column = true;
         row = $('<tr></tr>');
+
+        // set a fieldname attribute for use with event functions
+        row.attr('dwc_fieldname', field_name);
 
         // generic row class
         row.addClass('DwCFieldsView_FieldRow');
@@ -2888,8 +3285,9 @@ TODO:
           }
 
           // bind the "onChange" event to the button
-          checkbox.change(function() {
-            if (checkbox.attr('checked')) {
+          checkbox.click(function(event) {
+            // first toggle the checked value
+            if ($(this).attr('checked')) {
               field_info = {
                 'name': field_name,
                 'display': true
@@ -2900,7 +3298,14 @@ TODO:
               }
               obj.recordsTable.addField(field_name, field_info);
             }
-            else { obj.recordsTable.removeField(field_name); }
+            else
+            {
+              obj.recordsTable.removeField(field_name);
+            }
+
+            // prevent the checkbox click from continuing to
+            // trigger a row click event
+            event.stopPropagation();
           });
         }
 
@@ -2943,7 +3348,7 @@ TODO:
           row.addClass('DwCFieldsView_ClickableRow');
           // attach the event hook
           row.click(function() {
-            obj.onRowClick(obj, row);
+            obj.onRowClick(obj, $(this));
           });
         }
 
@@ -2984,6 +3389,7 @@ TODO:
         });
       }
     }
+
 
   /***************************************************************************
    * DwCFieldsView - Final Initialization Call
@@ -3027,7 +3433,7 @@ TODO:
     onShow: null,
     onHide: null,
     onRowClick: function (obj, row) {
-      return true;
+      obj.fieldView.setField(row.attr('dwc_fieldname'), true, true);
     }
   };
 
@@ -3519,10 +3925,37 @@ TODO:
   }
 
 
+
+
+
+  /***************************************************************************
+   * Some General Functions
+   ***************************************************************************/
+
   // returns "true" if the value is numeric, false if not
   function isNumeric(n) {
     return !isNaN(parseFloat(n)) && isFinite(n);
   }
+
+
+  // calculate a percentage based on various values
+  function calculateHistogramPercentage(args) {
+    // required options
+    var min = args['minvalue']; // global minimum value
+    var max = args['maxvalue']; // global maximum value
+    var value = args['value']; // the actual value of this entry
+
+    return (value - min) / (max - min);
+  }
+
+
+  function histogramPercentageToRange(args) {
+    var floor = args['floor']; // minimum allowable value
+    var ceiling = args['ceiling']; // maximum allowable value
+    var value = args['value']; // number between 0 - 1
+    return (value * (ceiling - floor)) + floor;
+  }
+
 
   // takes a string and escapes any SOLR special characters
   function solrEscapeValue(str) {

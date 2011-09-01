@@ -51,36 +51,58 @@ def getFields(request):
   fields = gateway.GetFields()
   return HttpResponse(fields, mimetype='application/json')
 
-def getField(request, name):
+def getField(request, field):
   '''Output general information about the requested field
   
-  :param name: The name of the field
-  :type name: string
+  :param field: The name of the field
+  :type field: string
   :returns: JSON structure from the getField() function as described in https://github.com/vdave/DwC_views/wiki/GatewayAPIs
   :rtype: json
   '''
 
-  field = gateway.GetField(name)
+  field = gateway.GetField(field)
   return HttpResponse(field, mimetype='application/json')
 
-def getFieldValues(request, name):
+def getFieldValues(request, field):
   '''Output a listing of unique values and their occurance count for the given field
   
-  :param name: The name of the field
-  :type name: string
+  :param field: The name of the field
+  :type field: string
   :returns: JSON structure from the getFieldValues() function as described in https://github.com/vdave/DwC_views/wiki/GatewayAPIs
   :rtype: json
   '''
   params = {}
   if request.GET.has_key('filter'):
-    params['query'] = request.GET['filter']
+    params['q'] = request.GET['filter']
   else:
-    params['query'] = "*:*"
+    params['q'] = "*:*"
   if request.GET.has_key('count'):
     params['count'] = atoi(request.GET['count'])
   else:
     params['count'] = 1000
-  values = gateway.GetFieldValues(name, **params)
+  values = gateway.GetFieldValues(field, **params)
+  return HttpResponse(values, mimetype='application/json')
+
+def getFieldHistogram(request, field):
+  '''Output a listing of unique values and their occurance count for the given field
+  
+  :param field: The name of the field
+  :type field: string
+  :returns: JSON structure from the getFieldValues() function as described in https://github.com/vdave/DwC_views/wiki/GatewayAPIs
+  :rtype: json
+  '''
+
+  params = {}
+  if request.GET.has_key('filter'):
+    params['q'] = request.GET['filter']
+  else:
+    params['q'] = "*:*"
+  if request.GET.has_key('nbins'):
+    params['nbins'] = atoi(request.GET['nbins'])
+  else:
+    params['nbins'] = 10
+
+  values = gateway.GetFieldHistogram(field, **params)
   return HttpResponse(values, mimetype='application/json')
 
 def getRecords(request):
@@ -127,9 +149,7 @@ def getRecords(request):
     params['count'] = atoi(request.GET['count'])
   else:
     params['count'] = 1000
-  results = gateway.GetRecords(q=params['q'], fields=params['fields'],
-                               orderby=params['orderby'], order=params['order'],
-                               start=params['start'], count=params['count'])
+  results = gateway.GetRecords(**params)
   return HttpResponse(results, mimetype='application/json')
 
 def getRecord(request, record_id):
@@ -142,8 +162,3 @@ def getRecord(request, record_id):
   '''
   record = gateway.GetRecord(record_id)
   return HttpResponse(record, mimetype='application/json')
-
-
-# Proof of Concept View
-def test(request):
-  return render_to_response('test.html')

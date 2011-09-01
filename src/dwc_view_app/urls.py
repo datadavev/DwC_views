@@ -14,13 +14,13 @@ urlpatterns = patterns('',
     # Darwin Core Views Gateway Web Services
     (r'^gateway/$', 'views.getSummary'),
     (r'^gateway/fields$', 'views.getFields'),
-    (r'^gateway/fields/(?P<name>[A-Za-z0-9_]+)$', 'views.getField'),
-    (r'^gateway/fields/(?P<name>[A-Za-z0-9_]+)/values$', 'views.getFieldValues'),
+    (r'^gateway/fields/(?P<field>[A-Za-z0-9_]+)$', 'views.getField'),
+    (r'^gateway/fields/(?P<field>[A-Za-z0-9_]+)/values$', 'views.getFieldValues'),
+    (r'^gateway/fields/(?P<field>[A-Za-z0-9_]+)/histogram$', 'views.getFieldHistogram'),
     (r'^gateway/records$', 'views.getRecords'),
     (r'^gateway/record/(?P<record_id>.+)$', 'views.getRecord'),
     # Test Page
-    (r'^$', 'views.test'),
-    #(r'^$', 'views.index'),
+    (r'^$', 'views.index'),
     # Example:
     # (r'^coreyosandbox/', include('coreyosandbox.foo.urls')),
 

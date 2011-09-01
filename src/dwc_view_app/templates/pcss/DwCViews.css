@@ -72,7 +72,7 @@ div.DwCRecordTable_Container
   width: 100%;
   border-style: solid;
   border-color: black;
-  border-width: 2px 2px 0px 2px;
+  border-width: 0px 0px 2px 0px;
   float: left;
   overflow: hidden;
   overflow-x: auto;
@@ -632,6 +632,157 @@ div.DwCMapView_Container
   border-width: 0px 0px 0px 2px;
   clear: right;
   overflow: hidden;
+}
+
+
+/******************************************************************
+ * DwCFieldView Styles
+ ******************************************************************/
+
+/* <div> container around the actual fields <table> element */
+div.DwCFieldView_Container
+{
+  width: auto;
+  margin: auto;
+  border-style: solid;
+  border-color: black;
+  border-width: 0px 0px 2px 0px;
+  overflow: hidden;
+  overflow-x: auto;
+  font-size: 10.5pt;
+}
+
+table.DwCFieldView_Table
+{
+  width: 100%;
+}
+
+tr.DwCFieldView_ControlRow
+{
+  background-color: {{ header_background_color }}
+}
+
+tr.DwCFieldView_ControlRow th
+{
+}
+
+div.DwCFieldView_Title
+{
+  float: left;
+  margin: 0px 2px 0px 2px;
+}
+div.DwCFieldView_Title:after
+{
+  font-size: 0.9em;
+  font-weight: bold;
+  text-decoration: underline;
+  font-family: sans-serif;
+  content: "Field Information";
+}
+
+.DwCFieldView_NullValue
+{
+  text-decoration: italic;
+}
+.DwCFieldView_NullValue
+{
+  content: "null";
+}
+
+div.DwCFieldView_HideButton
+{
+  float: right;
+  margin: 0px 2px 0px 2px;
+  cursor: pointer;
+}
+div.DwCFieldView_HideButton:after
+{
+  font-size: 0.9em;
+  font-weight: bold;
+  font-family: sans-serif;
+  content: "[X]";
+}
+
+tr.DwCFieldView_AttributeRow
+{
+}
+
+
+td.DwCFieldView_AttributeTitle
+{
+  border-collapse: separate;
+  empty-cells: show;
+  text-align: left;
+  vertical-align: top;
+  border-style: solid;
+  border-color: #000000;
+  border-width: 0px 2px 2px 0px;
+  font-family: times, serif;
+  font-weight: bold;
+  font-size: 0.85em;
+  overflow: hidden;
+  background-color: {{ row1_background_color }};
+  width: 15%;
+}
+td.DwCFieldView_AttributeTitle:after
+{
+  content: ':'
+}
+
+td.DwCFieldView_AttributeValue
+{
+  border-collapse: separate;
+  empty-cells: show;
+  text-align: left;
+  vertical-align: top;
+  border-style: solid;
+  border-color: #000000;
+  border-width: 0px 0px 2px 0px;
+  padding: 0px 2px 0px 4px;
+  font-family: times, serif;
+  font-weight: normal;
+  font-size: 0.85em;
+  overflow: hidden;
+  background-color {{ row2_background_color }};
+  width: 85%;
+}
+
+tr.DwCFieldView_AttributeRow:last-child td
+{
+  border-bottom-width: 0px;
+}
+
+td.DwCFieldView_WordCloudTitle
+{
+  font-weight: bold;
+  background-color: {{ header_background_color }}
+}
+td.DwCFieldView_WordCloudTitle:after
+{
+  content: "Field Values";
+}
+
+td.DwCFieldView_WordCloudValue
+{
+  -moz-box-sizing: border-box;
+  -ms-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+  padding: 4px 2px 4px 2px;
+  text-align: left;
+  vertical-align: top;
+}
+
+span.DwCFieldView_WordCloudValue
+{
+  padding 2px 8px 2px 2px;
+  color: #000000;
+  cursor: pointer;
+}
+span.DwCFieldView_WordCloudValue:hover
+{
+  background-color: #000000;
+  color: #ffffff;
 }
 
 

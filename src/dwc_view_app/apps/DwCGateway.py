@@ -154,23 +154,22 @@ class SOLRGateway:
     :rtype: JSON UTF-8 encoded string
     '''
 
-    values = self.__connection.fieldValues(field, q=q, maxvalues=count)
-    response = {'numRecords':values['numFound'],
-                'values':[]}
-    logging.info(str(values))
+    results = self.__connection.fieldValues(field, q=q, maxvalues=count)
+    logging.info(str(results))
     # values are wrapped in 3 levels of lists, exract the inner level
-    values = values.items()[0][1]
+    result_values = results[field]
     # fields and count are originally in a flat, alternating list:
     # i.e. [field1, count, field2, count, field3, count, ...]
     # we must transform them into a list of list "pairs":
     # i.e. [[field1, count], [field2, count], [field3, count], ...]
     #value_pairs = []
     i = 0
-    while i < len(values):
-      response['values'].append([values[i], values[i+1]])
+    values = [];
+    while i < len(result_values):
+      values.append([result_values[i], result_values[i+1]])
       i = i+2
 
-    json_dump = self.__json_encoder(response)
+    json_dump = self.__json_encoder({ 'numRecords': results['numFound'], 'values': values })
     return json_dump
 
 
