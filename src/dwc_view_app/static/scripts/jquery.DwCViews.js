@@ -39,8 +39,8 @@ TODO:
       // create a handle on the DOM element
       this.element = element;
 
-      this.gatewayAddress = this.options.gatewayAddress;
-      this.baseDir = this.options.baseDir;
+      this.fields = this.options.fields;
+      this.search = this.options.search;
       this.showToolbar = this.options.showToolbar;
       this.fields = this.options.fields;
       this.recordTable = this.options.recordTable;
@@ -49,6 +49,8 @@ TODO:
       this.viewPickerOptions = this.options.viewPickerOptions;
       this.recordsTable = this.options.recordsTable;
       this.recordsTableOptions = this.options.recordsTableOptions;
+      this.mapView = this.options.mapView;
+      this.mapViewOptions = this.options.mapViewOptions;
       this.fieldView = this.options.fieldView;
       this.fieldViewOptions = this.options.fieldViewOptions;
       this.fieldsView = this.options.fieldsView;
@@ -70,7 +72,39 @@ TODO:
    * DwCViews - Begin Public Functions
    ***************************************************************************/
 
-   // this.pubFunction = function() {}
+    this.doSearch = function(filter) {
+      // the search term will become the filter for the shared search object
+      this.search.filter = filter;
+
+      // make sure that the search bar displays the proper filter
+      if (this.searchBox) { this.searchBox.attr('value', filter); }
+
+      // if the dwc_views object has a records table
+      if (this.recordsTable && this.recordsTable.search == this.search) {
+        // reset the paging state back to the first page
+        this.recordsTable.resetPagingState();
+        // fetch a new set of records with the new filter
+        this.recordsTable.fetchRecords(false);
+      }
+
+      // likewise if the dwc_views object has a map view
+      if (this.mapView && this.mapView.search == this.search) {
+        // load a new set of markers with the new filter
+        this.mapView.Search();
+      }
+
+      // if the dwc_views object has a resident field view
+      if (this.fieldView && this.fieldView.search == this.search) {
+        // refresh the field data imposing the new filter
+        this.fieldView.refresh(false, false);
+      }
+
+      // if a search event hook was specified, call it
+      if (typeof(this.onSearch) == 'function') {
+        this.onSearch(this, filter);
+      }
+    }
+
 
 
   /***************************************************************************
@@ -90,32 +124,6 @@ TODO:
     return this.each(function() {
       (new $.DwCViews($(this), options));
     });
-  };
-
-
-  /***************************************************************************
-   * DwCViews - Default Options
-   ***************************************************************************/
-
-  $.DwCViews.defaultOptions = {
-    gatewayAddress: "",
-    baseDir: "/gateway/",
-    globalDefaultValue: '',
-    showToolbar: true,
-    recordTable: null,
-    recordTableOptions: null,
-    viewPicker: null,
-    viewPickerOptions: null,
-    recordsTable: null,
-    recordsTableOptions: null,
-    mapView: null,
-    mapViewOptions: null,
-    fieldView: null,
-    fieldViewOptions: null,
-    fieldsView: null,
-    fieldsViewOptions: null,
-    onInit: null,
-    onSearch: null
   };
 
 
@@ -157,6 +165,7 @@ TODO:
       search_box = $('<input type="text" class="DwCViews_SearchBox" />');
       obj.toolbar.append(search_box);
     }
+    // make a quick handler for the search box
     obj.searchBox = search_box;
 
     // hide the toolbar if specified in the options
@@ -178,19 +187,19 @@ TODO:
         if (obj.recordTableOptions) {
           // if no baseDir was supplied in the options, use the DwCViews baseDir
           if (obj.recordTableOptions['gatewayAddress'] == null) {
-            obj.recordTableOptions['gatewayAddress'] = obj.gatewayAddress;
+            obj.recordTableOptions['gatewayAddress'] = obj.search.gatewayAddress;
           }
           // if no baseDir was supplied in the options, use the DwCViews baseDir
           if (obj.recordTableOptions['baseDir'] == null) {
-            obj.recordTableOptions['baseDir'] = obj.baseDir;
+            obj.recordTableOptions['baseDir'] = obj.search.baseDir;
           }
         }
         // if no options were passed in, set some defaults
         else {
           // pass along the baseDir and gatewayAddress
           obj.recordTableOptions = {};
-          obj.recordTableOptions['gatewayAddress'] = obj.gatewayAddress;
-          obj.recordTableOptions['baseDir'] = obj.baseDir;
+          obj.recordTableOptions['gatewayAddress'] = obj.search.gatewayAddress;
+          obj.recordTableOptions['baseDir'] = obj.search.baseDir;
           // do not initialize the table on default (wait for a proper event)
           obj.recordTableOptions['loadOnInit'] = false;
           obj.recordTableOptions['hideOnInit'] = true;
@@ -215,24 +224,26 @@ TODO:
       // gateway server's options are used (unless overridden)
       if (field_view.data('DwCFieldView') == null) {
         if (obj.fieldViewOptions) {
-          // if no baseDir was supplied in the options, use the DwCViews baseDir
-          if (obj.fieldViewOptions['gatewayAddress'] == null) {
-            obj.fieldViewOptions['gatewayAddress'] = obj.gatewayAddress;
-          }
-          // if no baseDir was supplied in the options, use the DwCViews baseDir
-          if (obj.fieldViewOptions['baseDir'] == null) {
-            obj.fieldViewOptions['baseDir'] = obj.baseDir;
+          // if no search or gateway options were supplied, supply them
+          if (obj.fieldViewOptions['gatewayAddress'] == null
+              && obj.fieldViewOptions['baseDir'] == null
+              && obj.fieldViewOptions['search'] == null) {
+            obj.fieldViewOptions['search'] = obj.search;
           }
         }
         // if no options were passed in, set some defaults
         else {
           // pass along the baseDir and gatewayAddress
           obj.fieldViewOptions = {};
-          obj.fieldViewOptions['gatewayAddress'] = obj.gatewayAddress;
-          obj.fieldViewOptions['baseDir'] = obj.baseDir;
+          obj.fieldViewOptions['search'] = obj.search;
           // do not initialize the table on default (wait for a proper event)
           obj.fieldViewOptions['loadOnInit'] = false;
           obj.fieldViewOptions['hideOnInit'] = true;
+        }
+
+        // make sure that the single field view is aware of its parent DwCViews object
+        if (obj.fieldViewOptions['dwcviews'] == null) {
+          obj.fieldViewOptions['dwcviews'] = obj;
         }
 
         // initialize our record table
@@ -265,21 +276,18 @@ TODO:
       // gateway server's options are used (unless overridden)
       if (records_table.data('DwCRecordsTable') == null) {
         if (obj.recordsTableOptions) {
-          // if no baseDir was supplied in the options, use the DwCViews baseDir
-          if (obj.recordsTableOptions['gatewayAddress'] == null) {
-            obj.recordsTableOptions['gatewayAddress'] = obj.gatewayAddress;
+          // if no DwCSearch was specified, pass the global one
+          if (obj.recordsTableOptions['search'] == null) {
+            obj.recordsTableOptions['search'] = obj.search;
           }
-          // if no baseDir was supplied in the options, use the DwCViews baseDir
-          if (obj.recordsTableOptions['baseDir'] == null) {
-            obj.recordsTableOptions['baseDir'] = obj.baseDir;
-          }
+          //if (obj.recordsTableOptions['fields'] == null) {
+          //  obj.recordsTableOptions['fields'] = obj.fields;
+          //}
         }
         // if no options were passed in, set some defaults
         else {
-          // pass along the baseDir and gatewayAddress
-          obj.recordsTableOptions = {};
-          obj.recordsTableOptions['gatewayAddress'] = obj.gatewayAddress;
-          obj.recordsTableOptions['baseDir'] = obj.baseDir;
+          // add the shared DwCSearch object
+          obj.recordsTableOptions = {'search': obj.search};
         }
 
         // make this records table aware of the single record table
@@ -307,40 +315,14 @@ TODO:
       // gateway server's options are used (unless overridden)
       if (map_view.data('DwCMapView') == null) {
         if (obj.mapViewOptions) {
-          // if no search was supplied in the options, use the DwCViews baseDir
+          // if no DwCSearch was supplied in the options, use the shared object
           if (obj.mapViewOptions['search'] == null) {
-            obj.mapViewOptions['search'] = new $.DwCViews.DwCSearch({
-              'gatwayAddress': obj.gatewayAddress,
-              'baseDir': obj.baseDir
-            });
+            obj.mapViewOptions['search'] = obj.search;
           }
         }
         // if no options were passed in, set some defaults
         else {
           obj.mapViewOptions = {};
-
-          // pass along the baseDir and gatewayAddress
-          search_options = {};
-          search_options['gatewayAddress'] = obj.gatewayAddress;
-          search_options['baseDir'] = obj.baseDir;
-          // pass along any settings from the records table
-          if (obj.recordsTable) {
-            if (obj.recordsTable.query) {
-              search_options['filter'] = obj.recordsTable.query;
-            }
-            if (obj.recordsTable.start) {
-              search_options['start'] = obj.recordsTable.start;
-            }
-            if (obj.recordsTable.count) {
-              search_options['count'] = obj.recordsTable.count;
-            }
-            if (obj.recordsTable.sortBy) {
-              search_options['sortBy'] = obj.recordsTable.sortBy;
-            }
-            if (obj.recordsTable.sortBy) {
-              search_options['sortOrder'] = obj.recordsTable.sortOrder;
-            }
-          }
 
           // if we have a single record table, set a default onMarkerClick callback
           // to display a record when you click on its marker
@@ -351,7 +333,7 @@ TODO:
             }
           }
 
-          obj.mapViewOptions['search'] =  new $.DwCViews.DwCSearch(search_options);
+          obj.mapViewOptions['search'] = obj.search;
         }
 
         // initialize our record table
@@ -373,21 +355,14 @@ TODO:
       // gateway server's options are used (unless overridden)
       if (fields_view.data('DwCFieldsView') == null) {
         if (obj.fieldsViewOptions) {
-          // if no baseDir was supplied in the options, use the DwCViews baseDir
-          if (obj.fieldsViewOptions['gatewayAddress'] == null) {
-            obj.fieldsViewOptions['gatewayAddress'] = obj.gatewayAddress;
-          }
-          // if no baseDir was supplied in the options, use the DwCViews baseDir
-          if (obj.fieldsViewOptions['baseDir'] == null) {
-            obj.fieldsViewOptions['baseDir'] = obj.baseDir;
+          // if no DwCFields object was passed, use the default DwCViews object
+          if (obj.fieldsViewOptions['fields'] == null) {
+            obj.fieldsViewOptions['fields'] = obj.fields;
           }
         }
-        // if no options were passed in, set some defaults
+        // if no options were passed in, give it the global fields
         else {
-          // pass along the baseDir and gatewayAddress
-          obj.fieldsViewOptions = {};
-          obj.fieldsViewOptions['gatewayAddress'] = obj.gatewayAddress;
-          obj.fieldsViewOptions['baseDir'] = obj.baseDir;
+          obj.fieldsViewOptions = {'fields': obj.fields};
         }
 
         // make this fields view aware of the records table
@@ -448,44 +423,18 @@ TODO:
       obj.viewPicker = view_picker.data('DwCViewPicker');
     }
 
-    // create an onSearch function, if one was not given
-    // (and we have a view that can search
-    if (!obj.onSearch && (obj.recordsTable || obj.mapView)) {
-
-      // create a callback function that triggers a search on all of our views
-      obj.onSearch = function(filter, dwc_views) {
-
-        // if the dwc_views object has a records table
-        if (dwc_views.recordsTable) {
-          dwc_views.recordsTable.search.filter = filter;
-          dwc_views.recordsTable.fetchRecords(false);
-        }
-
-        // likewise if the dwc_views object has a map view
-        if (dwc_views.mapView) {
-          dwc_views.mapView.search.filter = filter;
-          dwc_views.mapView.Search();
-        }
+    // bind a record search event when the user presses the 'enter' key
+    // while the textbox is active
+    obj.searchBox.keyup(function(event) {
+      if (event.keyCode == 13) {
+        obj.doSearch(obj.searchBox.attr('value').trim());
       }
-    }
+    });
 
-
-    // if we have an onClick callback function, bind it to the search hooks
-    if (typeof(obj.onSearch) == 'function') {
-
-      // bind a record search event when the user presses the 'enter' key
-      // while the textbox is active
-      obj.searchBox.keyup(function(event) {
-        if (event.keyCode == 13) {
-          obj.onSearch(obj.searchBox.attr('value').trim(), obj);
-        }
-      });
-
-      // set the onClick event to search button
-      obj.searchButton.click(function () {
-        obj.onSearch(obj.searchBox.attr('value').trim(), obj);
-      });
-    }
+    // set the onClick event to search button
+    obj.searchButton.click(function () {
+      obj.doSearch(obj.searchBox.attr('value').trim());
+    });
   }
 
 
@@ -668,20 +617,26 @@ TODO:
     this.callback = this.options.callback;
     this.fieldName = this.options.fieldName;
     this.filter = this.options.filter;
-    this.maxFieldValues = this.options.maxFieldValues;
     this.fieldData = this.options.fieldData;
     this.fieldDataCallback = this.options.fieldDataCallback;
+    this.maxFieldValues = this.options.maxFieldValues;
     this.fieldValues = this.options.fieldValues;
     this.fieldValuesCallback = this.options.fieldValuesCallback;
     this.fieldHistogram = this.options.fieldHistogram;
+    this.fieldHistogramNBins = this.options.fieldHistogramnBins;
+    this.fieldHistogramCallback = this.options.fieldHistogramCallback;
 
     this.baseURL = this.gatewayAddress + this.baseDir;
+
 
     this.fetchAttributes = function(callback) {
       var obj = this;
       var url = this.baseURL + "fields/" + this.fieldName;
 
       callback = typeof(callback) == 'function'? callback : obj.fieldDataCallback;
+
+      /// DEBUGGING ///
+      console.log('Field URL: ' + url);
 
       $.getJSON(url, function(data) {
         obj.fieldData = data;
@@ -694,19 +649,29 @@ TODO:
 
     this.fetchValues = function(callback) {
       var obj = this;
+      var url_attrs = {};
       var url = this.baseURL + "fields/" + this.fieldName + "/values";
 
-      // if a limit on field values has been specified
-      if (this.maxFieldValues) {
-        url += "?count=" + this.maxFieldValues;
+      // handle any options passed to the field value
+      if (this.maxFieldValues || this.filter) {
+
+        // if a limit on field values has been specified
+        if (this.maxFieldValues) {
+          url_attrs['count'] = this.maxFieldValues.toString();
+        }
+
+        // if a filter has been specified
+        if (this.filter) {
+          url_attrs['filter'] = this.filter;
+        }
+
+        url = url + '?' + $.param(url_attrs);
       }
 
       callback = typeof(callback) == 'function'? callback : obj.fieldValuesCallback;
 
-      // if there is a filter, add it to the values request
-      if (this.filter) {
-        url += "?q=" + encodeURIComponent(this.filter);
-      }
+      /// DEBUGGING ///
+      console.log('Field Values URL: ' + url);
 
       $.getJSON(url, function(data) {
         obj.fieldValues = data['values'];
@@ -719,14 +684,29 @@ TODO:
 
     this.fetchHistogram = function(callback) {
       var obj = this;
+      var url_attrs = {};
       var url = this.baseURL + "fields/" + this.fieldName + "/histogram";
 
       callback = typeof(callback) == 'function'? callback : obj.fieldHistogramCallback;
 
-      // if there is a filter, add it to the values request
-      if (this.filter) {
-        url += "?q=" + encodeURIComponent(this.filter);
+      // handle any options passed to the field value
+      if (this.fieldHistogramNBins || this.filter) {
+
+        // if a limit on field values has been specified
+        if (this.fieldHistogramNBins) {
+          url_attrs['nbins'] = this.fieldHistogramNBins.toString();
+        }
+
+        // if a filter has been specified
+        if (this.filter) {
+          url_attrs['filter'] = this.filter;
+        }
+
+        url = url + '?' + $.param(url_attrs);
       }
+
+      /// DEBUGGING ///
+      console.log('Field Histogram URL: ' + url);
 
       $.getJSON(url, function(data) {
         obj.fieldHistogram = data;
@@ -746,6 +726,7 @@ TODO:
     fieldValues: null,
     fieldValuesCallback: null,
     fieldHistogram: null,
+    fieldHistogramNBins: null,
     fieldHistogramCallback: null,
     gatewayAddress: '',
     baseDir: "/gateway/",
@@ -778,6 +759,9 @@ TODO:
 
       callback = typeof(callback) == 'function'? callback : obj.callback;
 
+      /// DEBUGGING ///
+      console.log('Fields URL: ' + url);
+
       $.getJSON(url, function(data) {
         obj.data = data;
         if (typeof(callback) == 'function') {
@@ -793,6 +777,35 @@ TODO:
     baseDir: "/gateway/",
     callback: null
   }
+
+
+
+
+
+  /***************************************************************************
+   * DwCViews - Default Options
+   ***************************************************************************/
+
+  $.DwCViews.defaultOptions = {
+    fields: new $.DwCViews.DwCFields(),
+    search: new $.DwCViews.DwCSearch(),
+    globalDefaultValue: '',
+    showToolbar: true,
+    recordTable: null,
+    recordTableOptions: null,
+    viewPicker: null,
+    viewPickerOptions: null,
+    recordsTable: null,
+    recordsTableOptions: null,
+    mapView: null,
+    mapViewOptions: null,
+    fieldView: null,
+    fieldViewOptions: null,
+    fieldsView: null,
+    fieldsViewOptions: null,
+    onInit: null,
+    onSearch: null
+  };
 
 
 
@@ -833,7 +846,7 @@ TODO:
 
       // if we want this table to be hidden upon initialization
       if (this.options.hideOnInit) {
-        this.element.hide();
+        this.element.css('display', 'none');
       }
 
       prepareRecordTable(this);
@@ -1105,7 +1118,10 @@ TODO:
 
 
   function fetchRecord(obj, show_table) {
-    var url = obj.baseURL + 'record/' + encodeURI(solrEscapeValue(obj.recordID));
+    var url = obj.baseURL + 'record/"' + encodeURI(solrEscapeValue(obj.recordID)) + '"';
+
+    /// DEBUG ///
+    console.log("Record URL: " + url);
 
     // default value for the show_table parameter (false)
     show_table = typeof(show_table) != 'undefined'? show_table : false;
@@ -1145,6 +1161,9 @@ TODO:
 
       this.element = element;
       this.search = this.options.search;
+      this.recordsPerPage = this.options.recordsPerPage;
+      this.sortBy = this.options.sortBy;
+      this.sortOrder = this.options.sortOrder;
       this.fields = this.options.fields;
       this.fields_string = prepareFieldsString(this.options.fields);
       this.displayRowNums = this.options.displayRowNums;
@@ -1152,7 +1171,6 @@ TODO:
       this.recordTable = this.options.recordTable;
       this.fieldsView = this.options.fieldsView;
       this.idField = this.options.idField;
-      this.total = 0;
       this.dbFields = null;
       this.fieldsMenu = null;
       this.overlay = null;
@@ -1162,8 +1180,10 @@ TODO:
       this.onSearch = this.options.onSearch;
       this.onRowClick = this.options.onRowClick;
 
-      // build the base Darwin Core Views URL
-      this.baseURL = this.options.gatewayAddress + this.options.baseDir;
+      // internal state variables
+      this.start = 0;
+      this.total = 0;
+      this.data = null;
 
       // auto fetch data and load it into the table
       if (this.options.loadOnInit) {
@@ -1201,15 +1221,22 @@ TODO:
     this.updateLabel = function(data) {
       var label = "Showing Results: ";
       label += (data.start + 1) + " - ";
-      if ((data.start + this.search.count) > this.total) {
+      if ((data.start + this.recordsPerPage) > this.total) {
         label += (this.total) + " ";
       } else {
-        label += (data.start + this.search.count) + " ";
+        label += (data.start + this.recordsPerPage) + " ";
       }
       label += " (" + data.numFound + " total)";
       this.element.find(".DwCRecordsTable_PagingInfo").text(label);
     }
 
+    // resets the paging state back to the defaults
+    // (i.e. first page, default sort, ascending order)
+    this.resetPagingState = function() {
+      this.start = 0;
+      this.sortBy = null;
+      this.sortOrder = 'asc';
+    }
 
     // display Darwin Core records
     this.populateRecordsData = function(data) {
@@ -1253,7 +1280,7 @@ TODO:
           // add a special css class to identify it as a first-column cell
           cell.addClass('DwCRecordsTable_FirstColumnValue');
           is_first_column = false;
-          cell.text((i + obj.search.start + 1).toString());
+          cell.text((i + data.start + 1).toString());
           row.append(cell);
         }
 
@@ -1326,22 +1353,29 @@ TODO:
       cached = typeof(cached) != 'undefined'? cached : false;
 
       // use the existing data cache, if requested (and it exists)
-      if (cached && this.search.data != null) {
-        this.refreshData(this.search.data);
+      if (cached && this.data != null) {
+        this.refreshData(this.data);
         // create a hook for the 'onSearch' event
         if (typeof(obj.onSearch) == 'function') {
-          obj.onSearch(obj);
+          obj.onSearch(obj, obj.data);
         }
       }
       // fetch data
       else {
         this.search.doSearch({
           'fields_string': this.fields_string,
+          'start': obj.start,
+          'count': obj.recordsPerPage,
+          'sortBy': obj.sortBy,
+          'sortOrder': obj.sortOrder,
           'callback': function(data) {
+            // cache data
+            obj.data = data;
+            // fill out the table with the new data
             obj.refreshData(data);
             // create a hook for the 'onSearch' event
             if (typeof(obj.onSearch) == 'function') {
-              obj.onSearch(obj);
+              obj.onSearch(obj, data);
             }
           }
         });
@@ -1407,12 +1441,12 @@ TODO:
     // will simply toggle the sort order.
     this.sortByField = function(field_name) {
       // are we reordering?
-      if (this.search.sortBy == field_name) {
+      if (this.sortBy == field_name) {
         // toggle search order
-        this.search.sortOrder = (this.search.sortOrder == "asc"? "desc" : "asc");
+        this.sortOrder = (this.sortOrder == "asc"? "desc" : "asc");
       }
       else {
-        this.search.sortBy = field_name;
+        this.sortBy = field_name;
       }
       this.fetchRecords(false);
     }
@@ -1420,8 +1454,8 @@ TODO:
 
     // get the next record results page
     this.nextPage = function() {
-      if ((this.search.start + this.search.count) < this.total) {
-        this.search.start = this.search.start + this.search.count;
+      if ((this.start + this.recordsPerPage) < this.total) {
+        this.start = this.start + this.recordsPerPage;
         this.fetchRecords(false);
       }
     }
@@ -1429,8 +1463,8 @@ TODO:
 
     // get the next record results page
     this.prevPage = function() {
-      if ((this.search.start - this.search.count) >= 0) {
-        this.search.start = this.search.start - this.search.count;
+      if ((this.start - this.recordsPerPage) >= 0) {
+        this.start = this.start - this.recordsPerPage;
         this.fetchRecords(false);
       }
     }
@@ -1438,16 +1472,16 @@ TODO:
 
     // get the first record results page
     this.firstPage = function() {
-      this.search.start = 0;
+      this.start = 0;
       this.fetchRecords(false);
     }
 
 
     // get the next record results page
     this.lastPage = function() {
-      if (this.total > this.search.count) {
+      if (this.total > this.recordsPerPage) {
         // determine the last page's starting record
-        this.search.start = (this.total - (this.total % this.search.count));
+        this.start = (this.total - (this.total % this.recordsPerPage));
         this.fetchRecords(false);
       }
     }
@@ -1480,15 +1514,11 @@ TODO:
   // default plugin options
   $.DwCRecordsTable.defaultOptions = {
     loadOnInit: true,
-    search: new $.DwCViews.DwCSearch({
-      'gatewayAddress': '',
-      'baseDir': '/gateway/',
-      'filter': null,
-      'start': 0,
-      'count': 25,
-      'sortBy': null,
-      'sortOrder': 'asc'
-    }),
+    //fields: new $.DwCViews.DwCFields(),
+    search: new $.DwCViews.DwCSearch(),
+    recordsPerPage: 25,
+    sortBy: null,
+    sortOrder: 'asc',
     displayRowNums: true,
     globalDefaultValue: '',
     recordTable: null,
@@ -1695,7 +1725,7 @@ TODO:
 
   // fetch a list of available fields from the database records
   function fetchFieldInfo(obj) {
-    url = obj.baseURL + "fields";
+    url = obj.search.gatewayAddress + obj.search.baseDir + "fields";
     $.getJSON(url, function(db_fields) {
       obj.dbFields = db_fields;
       createFieldsMenu(obj, db_fields);
@@ -1726,7 +1756,7 @@ TODO:
 
       // take care of any conflicts (fields with the same weight)
       // if another field already has this weight, increment by 1 and try again
-      while (weights.hasOwnPropert(weight)) {
+      while (weights.hasOwnProperty(weight)) {
         weight++;
       }
 
@@ -1862,13 +1892,15 @@ TODO:
       this.rectangles = this.options.rectangles;
       this.autoCenter = this.options.autoCenter;
       this.maxRecords = this.options.maxRecords;
-      this.displayGrid = this.options.displayGrid;
-      this.displayMarkers = this.options.displayMarkers;
+      this.showGrid = this.options.showGrid;
+      this.showMarkers = this.options.showMarkers;
       this.tileRows = this.options.tileRows;
       this.tileCols = this.options.tileCols;
       this.maxMarkersPerTile = this.options.maxMarkersPerTile;
-      this.tileOpacity = this.options.tileOpacity;
-      this.totalRecords = 0;
+      this.rectangleOpacity = this.options.tileOpacity;
+      this.rectangleStrokeWeight = this.options.rectangleStrokeWeight;
+      this.rectangleStrokeColor = this.options.rectangleStrokeColor;
+      this.rectangleStrokeOpacity = this.options.rectangleStrokeOpacity;
 
       // some event hook handlers
       this.onInit = this.options.onInit;
@@ -1880,6 +1912,7 @@ TODO:
       this.onHide = this.options.onHide;
 
       // some internal variable used to help set and maintain map state
+      this.totalRecords = 0;
       this.lastKnownWidth = 0; // last known map container width
       this.lastKnownHeight = 0; // last known map container height
       this.lastKnownBounds = null; // the last known LatLngBounds map extent
@@ -1889,6 +1922,9 @@ TODO:
       this.markerBounds = null; // used to fit the map to a new set of markers
       this.dynamicMarkers = false;
       this.dynamicMarkerEventHandler = null; // used when turning dynamic markers on and off 
+      // filter addendum that culls records with invalid lat/lng values
+      this.defaultFilterAddendum = solrEscapeValue(this.latitudeField) + ':[\-90 TO 90] AND ';
+      this.defaultFilterAddendum += solrEscapeValue(this.longitudeField) + ':[\-180 TO 180]';
 
       // allows us to kill an ajax call already in progress
       this.ajaxHandlers = [];
@@ -1902,10 +1938,8 @@ TODO:
 
       // perform our search and place markers on the map
       if (this.search) {
-        // set a default filter addendum so that only records with
-        // valid longitude and latitude values will be chosen
-        this.search.filterAddendum = solrEscapeValue(this.latitudeField) + ':[\-90 TO 90] AND ';
-        this.search.filterAddendum += solrEscapeValue(this.longitudeField) + ':[\-180 TO 180]';
+        // default filter addendum to cull out invalide lat/lng values
+        search_options['filterAddendum'] = this.defaultFilterAddendum;
 
         // bind the idle function only after the initial search
         search_options['callback'] = function (data, args) {
@@ -1944,15 +1978,11 @@ TODO:
         return;
       }
       
-      // if the size of the map view has changed since it was last visible
-      if (this.lastKnownWidth != this.element.width()
-          || this.lastKnownHeight != this.element.height()) {
-        // resize the map to fit the new view size
-        google.maps.event.trigger(this.map, 'resize');
-      }
+      // resize the map to fit the new view size, if required
+      google.maps.event.trigger(this.map, 'resize');
 
       // if there is a call to fit the map to a new set of markers
-      else if (this.fitBounds) {
+      if (this.fitBounds) {
         this.fitBounds = false;
         this.map.fitBounds(this.markerBounds);
       }
@@ -1960,7 +1990,7 @@ TODO:
       // if the bounds of the map have changed, and dynamic loading has been turned on
       else if (this.dynamicMarkers && !this.map.getBounds().equals(this.lastKnownBounds)) {
         // dynamically load all markers within the map's current/active bounds
-        if (this.displayMarkers || this.displayGrid) {
+        if (this.showMarkers || this.showGrid) {
           this.loadBounds({
             "bounds": this.map.getBounds(),
             "dynamic": true,
@@ -1990,7 +2020,7 @@ TODO:
           this.onHide(this);
         }
         this.saveState();
-        this.element.hide();
+        this.element.hide(0, null, null);
       }
     }
 
@@ -2001,7 +2031,7 @@ TODO:
 
       // do nothing if the map view is already visible
       if (this.isHidden()) {
-        this.element.show(function() {
+        this.element.show(0, null, function() {
           obj.restoreState();
           // if a callback function was specified for the onShow() event hook
           if (typeof(obj.onShow) == 'function') {
@@ -2027,10 +2057,10 @@ TODO:
 
     this.displayMarkers = function(display) {
       if (display) {
-        this.displayMarkers = true;
+        this.showMarkers = true;
       }
       else {
-        this.displayMarkers = false;
+        this.showMarkers = false;
       }
     }
 
@@ -2095,11 +2125,21 @@ TODO:
       var rectangle;
       var rectangle_options;
 
+      // calculate the rectangle color
+      var fill_color = mapView_CalculateRectangleColor(this, {
+        "rectangleBounds": bounds,
+        "mapTotal": this.totalRecords,
+        "value": rectangle_values['recordCount']
+      });
+      
       // default rectangle options
       default_rectangle_options['map'] = this.map;
       default_rectangle_options['bounds'] = bounds;
-      default_rectangle_options['fillColor'] = "red";
-      default_rectangle_options['fillOpacity'] = this.tileOpacity;
+      default_rectangle_options['strokeWeight'] = this.rectangleStrokeWeight;
+      default_rectangle_options['strokeColor'] = this.rectangleStrokeColor;
+      default_rectangle_options['strokeOpacity'] = this.rectangleStrokeOpacity;
+      default_rectangle_options['fillColor'] = fill_color;
+      default_rectangle_options['fillOpacity'] = this.rectangleOpacity;
       if (typeof(this.onRectangleClick) != 'function' &&
         typeof(this.onRectangleDoubleClick) != 'function') {
         default_rectangle_options['clickable'] = false;
@@ -2291,7 +2331,7 @@ TODO:
 
       // if center == true, center/zoom the map based on the new set of markers
       if (center) {
-        // set the bounds (which will be 'restored' when the map view is unhidden
+        // set the bounds (which will be 'restored' when the map view is unhidden)
         this.markerBounds = bounds;
         this.fitBounds = true;
         this.restoreState();
@@ -2362,19 +2402,22 @@ TODO:
     longitudeField: 'lng',
     titleField: 'sciName_s',
     maxRecords: 1000,
-    tileResults: false,
+    tileResults: true,
     markers: {},
     rectangles: [],
     zoom: 0,
     center: new google.maps.LatLng(0,0),
     autoCenter: true,
     mapTypeId: google.maps.MapTypeId.HYBRID,
-    displayGrid: false,
-    displayMarkers: true,
-    tileRows: 5,
-    tileCols: 5,
-    maxMarkersPerTile: 50,
-    tileOpacity: 0.4,
+    showGrid: true,
+    showMarkers: false,
+    tileRows: 10,
+    tileCols: 10,
+    maxMarkersPerTile: 10,
+    rectangleOpacity: 0.25,
+    rectangleStrokeWeight: 1,
+    rectangleStrokeColor: '#000000',
+    rectangleStrokeOpacity: 0.5,
     onInit: null,
     onMarkerClick: null,
     //onRectangleClick: function(map_view, rectangle) {
@@ -2465,7 +2508,7 @@ TODO:
       search_options['callback'] = mapView_DoSearch;
     }
     search_options['callbackArgs'] = callback_args;
-    if (obj.displayMarkers) {
+    if (obj.showMarkers) {
       search_options['count'] = obj.maxRecords;
     }
     else {
@@ -2645,10 +2688,14 @@ TODO:
     var rectangle_values = args.hasOwnProperty('rectangleValues')? args['rectangleValues'] : {};
     var rectangle;
 
-    if (obj.displayMarkers) {
+    if (obj.showMarkers) {
       obj.loadMarkers(data, false)
     }
-    if (obj.displayGrid) {
+    if (obj.showGrid) {
+      // add metadata to the rectangle
+      if (!rectangle_values.hasOwnProperty('recordCount')) {
+        rectangle_values['recordCount'] = data.numFound;
+      }
       // add the rectangle
       rectangle = obj.addRectangle(bounds, rectangle_options, rectangle_values);
       rectangle.set('recordCount', data.numFound);
@@ -2756,6 +2803,73 @@ TODO:
   }
 
 
+  // takes a rectangle then returns a number representing the
+  // perecentage that the are of the rectangle represents of
+  // the total map.  All calculations are performed in degrees.
+  function mapView_CalculateRectanglePercent(obj, bounds) {
+    var total = 360 * 180; // size of the entire map (in degrees)
+    var span = bounds.toSpan();
+    var width = span.lng(); // in degrees
+    var height = span.lat(); // in height
+
+    return (width * height) / total;
+  }
+
+
+  // takes a plethora of information about the rectange, the map,
+  // and its current state and returns an RGB value in hex format
+  // representing the relative number of markers in the rectangle
+  function mapView_CalculateRectangleWeight(obj, args) {
+    var rectangle_bounds = args['rectangleBounds']; // rectangle coordinates
+    var rectangle_value = args['value']; // # of markers in the rectangle
+    var map_total = args['mapTotal']; // total # of markers in the map
+    var bounds_total = args['boundsTotal']; // total # of markers in the current bounds
+    var rectangle_percentage = mapView_CalculateRectanglePercent(obj, rectangle_bounds);
+
+    // in order to score a 1.0 weight, the rectangle's value must be at least
+    // scale * rectangle_average.  This value is arbitrary and may be changed.
+    var scale = 2;
+
+    var rectangle_average;
+    var value;
+
+    // calculate what we will consider an average value (will represent 0 weight of 0.5)
+    rectangle_average = map_total * rectangle_percentage;
+
+    // determine rectangle weight based on (rectangle_average * scale) as a weight of 1.0
+    value = rectangle_value / (rectangle_average * scale);
+
+    // value cannot exceed 1
+    if (value > 1) {  value = 1; }
+
+    return value;
+  }
+
+
+  // takes a whole bunch of variables and magically returns an HTML/CSS-compatible
+  // color value
+  function mapView_CalculateRectangleColor(obj, args) {
+    var red, green, blue;
+
+    // will return a 
+    var rectangle_weight = mapView_CalculateRectangleWeight(obj, args);
+
+    // if the weight is 0, return null (no color)
+    if (rectangle_weight == 0) {
+      return null;
+    }
+    else {
+      // calculate rgb values
+      red = Math.floor(rectangle_weight * 255); // upper bound
+      green = Math.floor((1 - rectangle_weight) * 255); // lower bound
+      blue = 0; // not used
+
+      // put it in a css-recognizable format
+      return  "rgb(" + red + "," + green + "," + blue + ")"; 
+    }
+  }
+
+
 
 
 
@@ -2782,6 +2896,8 @@ TODO:
       this.element = element;
 
       // standard options
+      this.search = this.options.search;
+      this.dwcviews = this.options.dwcviews;
       this.gatewayAddress = this.options.gatewayAddress;
       this.baseDir = this.options.baseDir;
       this.filter = this.options.filter;
@@ -2790,11 +2906,17 @@ TODO:
       this.wordCloudMaxFontSize = this.options.wordCloudMaxFontSize;
       this.wordCloudMinFontSize = this.options.wordCloudMinFontSize;
       this.wordCloudFontUnit = this.options.wordCloudFontUnit;
+      this.googleChartsUrl = this.options.googleChartsUrl;
+      this.histogramTitle = this.options.histogramTitle;
+      this.histogramNBins = this.options.histogramNBins;
+      this.histogramSize = this.options.histogramSize;
+      this.histogramBarColor = this.options.histogramBarColor;
 
       // event hooks
       this.onInit = this.options.onInit;
       this.onShow = this.options.onShow;
       this.onHide = this.options.onHide;
+      this.fieldValueOnClick = this.options.fieldValueOnClick;
 
       // other internal state variables
       this.field = null;
@@ -2862,9 +2984,49 @@ TODO:
     }
 
 
+    // set/change the which field the field view will display
+    this.setFilter = function(filter, load, show) {
+      // we don't need to do anything if it's already set to this field
+      if (this.fieldName != field_name) {
+
+        // set some defaults
+        load = typeof('load') != 'undefined'? load : true;
+        show = typeof('show') != 'undefined'? show: true;
+
+        this.field = null;
+        this.filter = filter;
+
+        // load the data immediately (if specified)
+        if (load) { this.populateFieldView(); }
+        // show the table once the data is loaded (if specified)
+        if (show) { this.show(); }
+      }
+    }
+
+
+    this.refresh = function(show, cached) {
+      // default argument values
+      show = typeof(show) != 'undefined'? show : false;
+      cached = typeof(show) != 'undefined'? cached : false;
+
+      // if cache == false, remove any previously cached data
+      //alert("REFRESH! Search = " + this.search + "\nfilter = " + this.search.filter + "\nField Name: " + this.fieldName + "\nCached?: " + cached);
+      if (!cached) { this.field = null; }
+
+      if (this.fieldName) {
+        this.populateFieldView();
+        // show the table once the data is loaded (if specified)
+        if (show && this.fieldName) { this.show(); }
+      }
+    }
+
+
     // fill-out all of the information in the field view
     this.populateFieldView = function() {
       var obj = this;
+
+      // if no field name has been set, this function will do nothing
+      if (!this.fieldName) { return; }
 
       // create the DwCField object (if necessary)
       fieldView_BuildField(this);
@@ -2872,20 +3034,19 @@ TODO:
       // empty the table (to make way for the new data)
       fieldView_EmptyView(this);
 
+      // if there is not yet any field data, we need to
+      // retrieve it first
       if (!this.field.fieldData) {
         this.field.fetchAttributes(function() {
           fieldView_PopulateAttributes(obj);
+          fieldView_PopulateFieldValueRepresentation(obj);
         });
       }
-      else { fieldView_PopulateAttributes(obj); }
-
-      // make sure that we have the field values for the word cloud
-      if (!this.field.fieldData) {
-        this.field.fetchValues(function() {
-          fieldView_BuildWordCloud(obj);
-        });
+      
+      else { 
+        fieldView_PopulateAttributes(obj);
+        fieldView_PopulateFieldValueRepresentation(obj);
       }
-      else { fieldView_BuildWordCloud(obj); }
     }
 
 
@@ -2914,6 +3075,8 @@ TODO:
    ***************************************************************************/
 
   $.DwCFieldView.defaultOptions = {
+    search: null,
+    dwcviews: null,
     gatewayAddress: "",
     baseDir: "/gateway/",
     filter: null,
@@ -2924,15 +3087,35 @@ TODO:
       minvalue: "Minimum Value",
       maxvalue: "Maximum Value"
     },
-    maxFieldValues: 45,
+    maxFieldValues: 50,
     wordCloudMaxFontSize: 3,
     wordCloudMinFontSize: 0.80,
     wordCloudFontUnit: 'em',
+    googleChartsUrl: 'http://chart.apis.google.com/chart',
+    histogramTitle: null, //'Field Value Distributions',
+    histogramNBins: 10,
+    histogramSize: '775x375',
+    histogramBarColor: '3366cc',
     loadOnInit: true,
     hideOnInit: false,
     onInit: null,
     onShow: null,
-    onHide: null
+    onHide: null,
+    fieldValueOnClick: function(field_view, element) {
+      var filter, original_filter, value_filter;
+      if (field_view.dwcviews) {
+        original_filter = field_view.dwcviews.search.filter;
+        //value_filter = field_view.fieldName + ':' + encodeURI(element.attr('dwc_fieldvalue'));
+        value_filter = field_view.fieldName + ':"' + element.attr('dwc_fieldvalue') + '"';
+        if (original_filter) {
+          filter = "(" + original_filter + ") AND (" + value_filter + ")";
+        }
+        else {
+          filter = value_filter;
+        }
+        field_view.dwcviews.doSearch(filter);
+      }
+    }
   };
 
 
@@ -2980,13 +3163,18 @@ TODO:
 
   // if the DwCField object does not exist, build it
   function fieldView_BuildField(obj) {
+    var field_options = {};
+    // if a field already exists, don't do anything
     if (!obj.field) {
-      obj.field = new $.DwCViews.DwCField({
-        "fieldName": obj.fieldName,
-        "gatewayAddress": obj.gatewayAddress,
-        "baseDir": obj.baseDir,
-        "maxFieldValues": obj.maxFieldValues
-      });
+      field_options['fieldName'] = obj.fieldName;
+      field_options['maxFieldValues'] = obj.maxFieldValues;
+      field_options['fieldHistogramNBins'] = obj.histogramNBins;
+      // determine the gatewayAddress/baseDir/filter.  If a DwCSearch object
+      // was passed, use its settings.  If not, use those passed in the options
+      field_options['gatewayAddress'] = typeof(obj.search) == 'object'? obj.search.gatewayAddress : obj.gatewayAddress;
+      field_options['baseDir'] = typeof(obj.search) == 'object'? obj.search.baseDir : obj.baseDir;
+      field_options['filter'] = typeof(obj.search) == 'object'? obj.search.filter : obj.filter;
+      obj.field = new $.DwCViews.DwCField(field_options);
     }
   }
 
@@ -3065,8 +3253,7 @@ TODO:
   }
 
 
-  function fieldView_BuildWordCloud(obj)
-  {
+  function fieldView_BuildWordCloud(obj) {
     var wcloud_title;
     var wcloud_container;
     var wcloud_value;
@@ -3100,8 +3287,91 @@ TODO:
       wcloud_value.text(value_pair[0]);
       // scale the size of the font
       wcloud_value.css('font-size', fieldView_CalculateFontSize(obj, value_pair[1]));
+      wcloud_value.attr('dwc_fieldvalue', value_pair[0].toString());
       wcloud_container.append(wcloud_value);
+
+      // bind the onclick even, if a function was given
+      if (typeof(obj.fieldValueOnClick) == 'function') {
+        wcloud_value.click(function() {
+          obj.fieldValueOnClick(obj, $(this));
+        });
+      }
     });
+  }
+
+
+  function fieldView_BuildHistogram(obj) {
+    var histogram_title;
+    var histogram_container;
+    var histogram_img;
+    var tr;
+    var histogram_url;
+    var url_attrs = {};
+    var first = true;
+    var max_bin_count = 10;
+
+    // first, we need to construct the URL for our google charts image
+    if (obj.histogramTitle) { url_attrs['chtt'] = obj.histogramTitle; } // chart title
+    url_attrs['chs'] = obj.histogramSize; // chart size
+    url_attrs['chco'] = obj.histogramBarColor; // cbar color
+    url_attrs['cht'] = 'bhg'; // ???? but required
+    url_attrs['chbh'] = 'a'; // ???? but stretches graph to fit
+    url_attrs['chxt'] = 'y,x'; // define axes (plural of axis)
+    url_attrs['chd'] = 't:'; // data set (built in loop)
+    url_attrs['chxl'] = '0:|'; // data labels (built in loop)
+    // loop through each histogram bin and set data/labels
+    $.each(obj.field.fieldHistogram, function(index, bin_array) {
+      if (!first) {
+        url_attrs['chd'] += ',';
+        url_attrs['chxl'] += '|';
+      }
+      else {
+        first = false;
+      }
+      // set data value
+      url_attrs['chd'] += bin_array[2].toString();
+      // set data label
+      url_attrs['chxl'] += bin_array[0].toFixed(2).toString();
+      url_attrs['chxl'] += '  →  ';
+      url_attrs['chxl'] += bin_array[1].toFixed(2).toString();
+      url_attrs['chxl'] += '  ';
+
+      // determine max count
+      if (bin_array[2] > max_bin_count) { max_bin_count = bin_array[2]; }
+    });
+
+    // set the max for the Y axis
+    url_attrs['chds'] = "0," + max_bin_count; // scale the chart
+    url_attrs['chxr'] = '1,0,' + max_bin_count; // set the labels
+
+    // construct the URL
+    histogram_url = obj.googleChartsUrl + "?" + $.param(url_attrs);
+
+    // if the histogram title bar doesn't exist, add it
+    histogram_title = obj.fieldTable.find('td.DwCFieldView_HistogramTitle:last');
+    if (histogram_title.length == 0) {
+      tr = $('<tr></tr>');
+      tr.addClass('DwCFieldView_Histogram');
+      histogram_title = $('<td colspan="2"></td>');
+      histogram_title.addClass('DwCFieldView_HistogramTitle');
+      tr.append(histogram_title);
+      obj.fieldTable.append(tr);
+    }
+
+    // if the histogram container doesn't exit, add it
+    histogram_container = obj.fieldTable.find('td.DwCFieldView_HistogramValue:last');
+    if (histogram_container.length == 0) {
+      tr = $('<tr></tr>');
+      tr.addClass('DwCFieldView_Histogram');
+      histogram_container = $('<td colspan="2"></td>');
+      histogram_container.addClass('DwCFieldView_WordCloudValue');
+      histogram_img = $('<img></img>');
+      histogram_img.addClass('DwCFieldView_Histogram');
+      histogram_img.attr('src', histogram_url);
+      histogram_container.append(histogram_img);
+      tr.append(histogram_container);
+      obj.fieldTable.append(tr);
+    }
   }
 
 
@@ -3128,6 +3398,33 @@ TODO:
       "value": percent
     });
     return font_size + obj.wordCloudFontUnit;
+  }
+
+
+  // first determines if the field is a number or date, then
+  // creates either a wordcloud or histogram to represent
+  // the current values for the given field
+  function fieldView_PopulateFieldValueRepresentation(obj) {
+    // generate a word cloud for non-numeric/date values
+    if ($.inArray(obj.field.fieldData[obj.fieldName]['type'], solrQuantifiableFieldTypes) == -1) {
+      // make sure that we have the field values for the word cloud
+      if (!obj.field.fieldValues) {
+        obj.field.fetchValues(function() {
+          fieldView_BuildWordCloud(obj);
+        });
+      }
+      else { fieldView_BuildWordCloud(obj); }
+    }
+    // we have a quantifiable value.  generate a histogram
+    else {
+      // make sure that we have the field histogram information
+      if (!obj.field.fieldHistogram) {
+        obj.field.fetchHistogram(function() {
+          fieldView_BuildHistogram(obj);
+        });
+      }
+      else { fieldView_BuildHistogram(obj); }
+    }
   }
 
 
@@ -3999,5 +4296,18 @@ TODO:
 
   // the character used to escape special characters in SOLR values
   var solrEscapeCharacter = '\\';
+
+  // list of all quantifiable solr field types (includes numbers and dates)
+  var solrQuantifiableFieldTypes = new Array( 
+    'integer',
+    'sint',
+    'sdouble',
+    'long',
+    'double',
+    'float',
+    'sfloat',
+    'slong',
+    'date'
+  );
 
 })(jQuery);

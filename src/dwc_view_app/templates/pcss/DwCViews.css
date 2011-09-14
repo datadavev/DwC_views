@@ -646,7 +646,7 @@ div.DwCFieldView_Container
   margin: auto;
   border-style: solid;
   border-color: black;
-  border-width: 0px 0px 2px 0px;
+  border-width: 0px 0px 0px 0px;
   overflow: hidden;
   overflow-x: auto;
   font-size: 10.5pt;
@@ -755,7 +755,7 @@ tr.DwCFieldView_AttributeRow:last-child td
 td.DwCFieldView_WordCloudTitle
 {
   font-weight: bold;
-  background-color: {{ header_background_color }}
+  background-color: {{ header_background_color }};
 }
 td.DwCFieldView_WordCloudTitle:after
 {
@@ -775,7 +775,8 @@ td.DwCFieldView_WordCloudValue
 
 span.DwCFieldView_WordCloudValue
 {
-  padding 2px 8px 2px 2px;
+  margin: 2px 8px 2px 2px;
+  padding 1px 1px 1px 1px;
   color: #000000;
   cursor: pointer;
 }
@@ -783,6 +784,22 @@ span.DwCFieldView_WordCloudValue:hover
 {
   background-color: #000000;
   color: #ffffff;
+}
+
+td.DwCFieldView_HistogramTitle
+{
+  font-weight: bold;
+  background-color: {{ header_background_color }};
+}
+td.DwCFieldView_HistogramTitle:after
+{
+  content: "Field Values";
+}
+
+img.DwCFieldView_Histogram
+{
+  text-align: center;
+  vertical-align: middle;
 }
 
 
