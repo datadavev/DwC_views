@@ -11,6 +11,8 @@ urlpatterns = patterns('',
     # Serve Static Content (Should Only Be Used For Testing!)
     (r'^static/(?P<path>.*)$', 'django.views.static.serve',
       {'document_root': settings.STATIC_DOC_ROOT, 'show_indexes': False}),
+    (r'^media/(?P<path>.*)$', 'django.views.static.serve',
+      {'document_root': settings.MEDIA_ROOT, 'show_indexes': False}),
     # Darwin Core Views Gateway Web Services
     (r'^gateway/$', 'views.getSummary'),
     (r'^gateway/fields$', 'views.getFields'),

@@ -5,7 +5,7 @@ TODO:
    recordTable: formatting
    recordsTable: cache field option - per field
    recordsTable: cache fields option - all fields
-   recordsTable: special class for active (single record) row
+   recordsTable: special css class for active (single record) row
    recordsTable: row number field to be handled in fields array
    recordsTable: nPage(n) function - jump to page number "n"
    recordsTable: sort by column not working
@@ -58,7 +58,7 @@ TODO:
       this.onInit = this.options.onInit;
       this.onSearch = this.options.onSearch;
 
-      setupViews(this);
+      views_Initialize(this);
 
       // set up an onInit/onLoad hook if an onInit function was defined
       if (typeof(this.onInit) == 'function') {
@@ -131,7 +131,7 @@ TODO:
    * DwCViews - Begin Private Functions
    ***************************************************************************/
 
-  function setupViews(obj) {
+  function views_Initialize(obj) {
     var toolbar;
     var search_box;
     var search_button;
@@ -849,11 +849,11 @@ TODO:
         this.element.css('display', 'none');
       }
 
-      prepareRecordTable(this);
+      recordTable_Initialize(this);
 
       // go ahead and build the table's data unless otherwise specified
       if (this.recordID != '' && this.options.loadOnInit) {
-        fetchRecord(this);
+        recordTable_FetchRecord(this);
       }
 
     }
@@ -870,7 +870,7 @@ TODO:
 
     this.recordID = id.toString();
     this.searchBox.attr('value', this.recordID);
-    fetchRecord(this, show_table);
+    recordTable_FetchRecord(this, show_table);
   }
 
 
@@ -1038,7 +1038,7 @@ TODO:
    * DwCRecordTable - Begin Private Functions
    ***************************************************************************/
 
-  function prepareRecordTable(obj) {
+  function recordTable_Initialize(obj) {
     var record_table;
 
     obj.element.addClass('DwCRecordTable_Container');
@@ -1117,7 +1117,7 @@ TODO:
   }
 
 
-  function fetchRecord(obj, show_table) {
+  function recordTable_FetchRecord(obj, show_table) {
     var url = obj.baseURL + 'record/"' + encodeURI(solrEscapeValue(obj.recordID)) + '"';
 
     /// DEBUG ///
@@ -1165,7 +1165,7 @@ TODO:
       this.sortBy = this.options.sortBy;
       this.sortOrder = this.options.sortOrder;
       this.fields = this.options.fields;
-      this.fields_string = prepareFieldsString(this.options.fields);
+      this.fields_string = recordsTable_PrepareFieldsString(this.options.fields);
       this.displayRowNums = this.options.displayRowNums;
       this.globalDefaultValue = this.options.globalDefaultValue;
       this.recordTable = this.options.recordTable;
@@ -1191,13 +1191,13 @@ TODO:
       }
 
       // add extra elements and style-ize the DwCRecordsTable element
-      prepareTable(this);
-      prepareHeader(this);
-      prepareBody(this);
-      prepareFooter(this);
+      recordsTable_Initialize(this);
+      recordsTable_PrepareHeader(this);
+      recordsTable_PrepareBody(this);
+      recordsTable_PrepareFooter(this);
 
       // fetch and cache the available db fields
-      fetchFieldInfo(this);
+      recordsTable_FetchFieldInfo(this);
 
       // bind right-click on field headers to the fields context menu
       this.recordsTable.find(".DwCRecordsTable_HeaderRow").bind('contextmenu', function(e) {
@@ -1394,10 +1394,10 @@ TODO:
       else {
         this.fields[field_name] = field_info;
       }
-      this.fields_string = prepareFieldsString(this.fields);
-      prepareHeader(this);
+      this.fields_string = recordsTable_PrepareFieldsString(this.fields);
+      recordsTable_PrepareHeader(this);
       this.fetchRecords(false);
-      prepareFooter(this);
+      recordsTable_PrepareFooter(this);
 
       // synchronize the fields context menu
       if (this.fieldsMenu) { this.fieldsMenu.itemOn('fields', field_info['name']); }
@@ -1411,11 +1411,11 @@ TODO:
     this.removeField = function(field_name) {
       if (field_name in this.fields) {
         this.fields[field_name]['display'] = false;
-        removeFieldHeader(this, field_name);
-        this.fields_string = prepareFieldsString(this.fields);
-        prepareHeader(this);
+        recordsTable_RemoveFieldHeader(this, field_name);
+        this.fields_string = recordsTable_PrepareFieldsString(this.fields);
+        recordsTable_PrepareHeader(this);
         this.fetchRecords(true);
-        prepareFooter(this);
+        recordsTable_PrepareFooter(this);
 
         // synchronize the fields context menu
         this.fieldsMenu.itemOff('fields', field_name);
@@ -1563,7 +1563,7 @@ TODO:
    ***************************************************************************/
 
   // style-ize elements and add table
-  function prepareTable(obj) {
+  function recordsTable_Initialize(obj) {
     var records_table;
 
     obj.element.addClass("DwCRecordsTable_Container");
@@ -1578,7 +1578,7 @@ TODO:
   }
 
   // ceate / style-ize column headers
-  function prepareHeader(obj) {
+  function recordsTable_PrepareHeader(obj) {
     var cell;
     var sorter;
     var field;
@@ -1632,13 +1632,9 @@ TODO:
     });
   }
 
-  // remove a field header given the field's name
-  function removeFieldHeader(obj, field_name) {
-    obj.recordsTable.find('.DwCRecordsTable_FieldHeader[dwcviews_field="' + field_name + '"]').remove();
-  }
 
   // set up the <tbody>, which will house the records data
-  function prepareBody(obj) {
+  function recordsTable_PrepareBody(obj) {
     // if no <tbody> was defined in the base HTML,
     // add it to the DwCRecordsTable
     if (obj.recordsTable.find("tbody").length == 0) {
@@ -1653,8 +1649,9 @@ TODO:
     }
   }
 
+
   // create / style-ize table footer and buttons
-  function prepareFooter(obj) {
+  function recordsTable_PrepareFooter(obj) {
     // how many columns are in our table?
     var column_count = obj.recordsTable.find(".DwCRecordsTable_HeaderRow:last")[0].cells.length;
 
@@ -1723,18 +1720,25 @@ TODO:
 
   }
 
+
+  // remove a field header given the field's name
+  function recordsTable_RemoveFieldHeader(obj, field_name) {
+    obj.recordsTable.find('.DwCRecordsTable_FieldHeader[dwcviews_field="' + field_name + '"]').remove();
+  }
+
+
   // fetch a list of available fields from the database records
-  function fetchFieldInfo(obj) {
+  function recordsTable_FetchFieldInfo(obj) {
     url = obj.search.gatewayAddress + obj.search.baseDir + "fields";
     $.getJSON(url, function(db_fields) {
       obj.dbFields = db_fields;
-      createFieldsMenu(obj, db_fields);
+      recordsTable_CreateFieldsMenu(obj, db_fields);
     });
   }
 
 
   // sort fields by their display order
-  function sortFields(fields) {
+  function recordsTable_SortFields(fields) {
     var sorted_fields = {};
     var weight_pairs = {};
     var weights = new Array();
@@ -1782,13 +1786,12 @@ TODO:
       alert(name + ": " + field['displayWeight']);
     });
     return sorted_fields;
-
   }
 
   
   // turns all of the keys in an associative array into a
   // comma-dilineated string
-  function prepareFieldsString(fields) {
+  function recordsTable_PrepareFieldsString(fields) {
     var fields_string = "";
     var is_first = true;
     $.each(fields, function(name, field) {
@@ -1804,8 +1807,7 @@ TODO:
   }
 
 
-  function createFieldsMenu(obj, db_fields) {
-
+  function recordsTable_CreateFieldsMenu(obj, db_fields) {
     // create a common overlay, if none exists
     if (obj.overlay == null) {
       obj.overlay = createMenuOverlay();
@@ -1878,6 +1880,8 @@ TODO:
       this.element = element;
 
       this.map = null; // the actual google maps object
+      this.markerButton = null;
+      this.gridButton = null;
       this.search = this.options.search;
       this.idField = this.options.idField;
       this.latitudeField = this.options.latitudeField;
@@ -1912,7 +1916,8 @@ TODO:
       this.onHide = this.options.onHide;
 
       // some internal variable used to help set and maintain map state
-      this.totalRecords = 0;
+      this.totalMapRecords = 0; // total markers on the entire map
+      this.totalBoundsRecords = 0; // total markers on just the curren map bounds
       this.lastKnownWidth = 0; // last known map container width
       this.lastKnownHeight = 0; // last known map container height
       this.lastKnownBounds = null; // the last known LatLngBounds map extent
@@ -1929,7 +1934,7 @@ TODO:
       // allows us to kill an ajax call already in progress
       this.ajaxHandlers = [];
 
-      setupMapView(this);
+      mapView_Initialize(this);
 
       // if a callback function was specified for the onInit event hook
       if (typeof(this.onInit) == 'function') {
@@ -1972,11 +1977,15 @@ TODO:
 
 
     // restores the map's last saved zoom/center
-    this.restoreState = function() {
+    // if force_refresh == yes, the map will be forced to re-query
+    this.restoreState = function(force_refresh) {
       // if the object is not visible (hidden), don't do anything at all
       if (this.isHidden()) {
         return;
       }
+
+      // force_refresh defaults to false
+      force_refresh = typeof(force_refresh) != 'undefined'? force_refresh : false;
       
       // resize the map to fit the new view size, if required
       google.maps.event.trigger(this.map, 'resize');
@@ -1988,7 +1997,7 @@ TODO:
       }
 
       // if the bounds of the map have changed, and dynamic loading has been turned on
-      else if (this.dynamicMarkers && !this.map.getBounds().equals(this.lastKnownBounds)) {
+      else if (force_refresh || (this.dynamicMarkers && !this.map.getBounds().equals(this.lastKnownBounds))) {
         // dynamically load all markers within the map's current/active bounds
         if (this.showMarkers || this.showGrid) {
           this.loadBounds({
@@ -2055,23 +2064,49 @@ TODO:
     }
 
 
-    this.displayMarkers = function(display) {
-      if (display) {
-        this.showMarkers = true;
+    // set active/inactive button styles
+    this.refreshButtonStates = function() {
+      // marker button
+      if (this.showMarkers && this.markerButton) {
+        this.markerButton.addClass('DwCMapView_ActiveMapButton');
       }
       else {
-        this.showMarkers = false;
+        this.markerButton.removeClass('DwCMapView_ActiveMapButton');
+      }
+
+      // grid button
+      if (this.showGrid && this.gridButton) {
+        this.gridButton.addClass('DwCMapView_ActiveMapButton');
+      }
+      else {
+        this.gridButton.removeClass('DwCMapView_ActiveMapButton');
       }
     }
 
 
+    this.displayMarkers = function(display) {
+      var original_state = this.showMarkers;
+      this.showMarkers = typeof(display) != 'undefined'? display : true;
+      // re-query/re-draw if necessary
+      if (this.showMarkers != original_state)  {
+        this.reload();
+      }
+      this.refreshButtonStates();
+    }
+
+
     this.displayGrid = function(display) {
-      if (display) {
-        this.displayGrid = true;
+      display = typeof(display) != 'undefined'? display : true;
+
+      // this SHOULD be unnecessary, showGrid = true should automagically tile results
+      if (display) { this.tileResults = true; }
+      var original_state = this.showGrid;
+      this.showGrid = typeof(display) != 'undefined'? display : true;
+      // re-query/re-draw if necessary
+      if (this.showGrid != original_state)  {
+        this.reload();
       }
-      else {
-        this.displayGrid = false;
-      }
+      this.refreshButtonStates();
     }
 
 
@@ -2128,7 +2163,8 @@ TODO:
       // calculate the rectangle color
       var fill_color = mapView_CalculateRectangleColor(this, {
         "rectangleBounds": bounds,
-        "mapTotal": this.totalRecords,
+        "mapTotal": this.totalMapRecords,
+        'boundsTotal': this.totalBoundsRecords,
         "value": rectangle_values['recordCount']
       });
       
@@ -2185,7 +2221,7 @@ TODO:
 
     // makes sure that all markers in the "markers" array
     // have been made visible on the map
-    this.displayMarkers = function() {
+    this.drawMarkers = function() {
       var obj = this;
       $.each(this.markers, function(key, marker) {
         marker.setMap(obj.map)
@@ -2195,7 +2231,7 @@ TODO:
 
     // makes sure that all overlays in the "rectangles" array
     // have been made visible on the map
-    this.displayRectangles = function() {
+    this.drawRectangles = function() {
       var obj = this;
       $.each(this.rectangles, function(index, rectangle) {
         rectangle.setMap(obj.map)
@@ -2205,7 +2241,7 @@ TODO:
 
     // makes sure that all overlays in the "markers"
     // and "rectangles" array have been made visible on the map
-    this.displayOverlays = function() {
+    this.drawOverlays = function() {
       this.displayMarkers();
       this.displayRectangles();
     }
@@ -2367,6 +2403,31 @@ TODO:
     }
 
 
+    // requeries/redraws/reloads all map overlays
+    this.reload = function() {
+      this.restoreState(true);
+    }
+
+
+    // sets display to the type specified:
+    // true = markers, false = grid, null = toggle
+    this.toggleDisplayType = function(toggle_type) {
+      // if no type was specified, toggle
+      if (typeof(toggle_type) == 'undefined') {
+        if (this.showGrid) { toggle_type = true; }
+        else { toggle_type = false; }
+      }
+      // turn on markers, turn off grid
+      if (toggle_type) {
+        this.tileResults = false;
+        this.showGrid = false;
+        this.displayMarkers();
+      }
+      else {
+        this.showMarkers = false;
+        this.displayGrid();
+      }
+    }
 
 
 
@@ -2402,15 +2463,15 @@ TODO:
     longitudeField: 'lng',
     titleField: 'sciName_s',
     maxRecords: 1000,
-    tileResults: true,
+    tileResults: false,
     markers: {},
     rectangles: [],
     zoom: 0,
     center: new google.maps.LatLng(0,0),
     autoCenter: true,
     mapTypeId: google.maps.MapTypeId.HYBRID,
-    showGrid: true,
-    showMarkers: false,
+    showGrid: false,
+    showMarkers: true,
     tileRows: 10,
     tileCols: 10,
     maxMarkersPerTile: 10,
@@ -2450,9 +2511,10 @@ TODO:
    * DwCMapView - Begin Private Functions
    ***************************************************************************/
 
-  function setupMapView(obj) {
+  function mapView_Initialize(obj) {
     var map;
     var map_options = {}
+    var button_container;
 
     // style-ize the map container
     obj.element.addClass('DwCMapView_Container');
@@ -2467,6 +2529,42 @@ TODO:
 
     // set the map's initial state
     obj.saveState();
+
+    // create some extra buttons for the map
+
+    obj.markerButton = $('<div></div>');
+    obj.markerButton.addClass('DwCMapView_MarkerButton');
+    obj.markerButton.addClass('DwCMapView_MapButton');
+    // set as active if markers are turned on
+    if (obj.showMarkers) {
+      obj.markerButton.addClass('DwCMapView_ActiveMapButton');
+    }
+
+    obj.gridButton = $('<div></div>');
+    obj.gridButton.addClass('DwCMapView_GridButton');
+    obj.gridButton.addClass('DwCMapView_MapButton');
+    if (obj.tileResults && this.showGrid) {
+      obj.markerButton.addClass('DwCMapView_ActiveMapButton');
+    }
+
+    // stick them all into a common container
+    button_container = $('<div></div>');
+    button_container.addClass('DwCMapView_ButtonContainer');
+    button_container.append(obj.markerButton);
+    button_container.append(obj.gridButton);
+    obj.element.append(button_container);
+
+    // bind the marker button event
+    google.maps.event.addDomListener(obj.markerButton[0], 'click', function() {
+      obj.toggleDisplayType(true);
+    });
+    // bind the grid button event
+    google.maps.event.addDomListener(obj.gridButton[0], 'click', function() {
+      obj.toggleDisplayType(false);
+    });
+
+    // add the button container to the google maps control object
+    obj.map.controls[google.maps.ControlPosition.TOP_RIGHT].push(button_container[0]);
   }
 
 
@@ -2558,7 +2656,7 @@ TODO:
     // if this is not a tile/dynamic query
     if (!dynamic && !tile) {
       // set the total number or records
-      obj.totalRecords = count;
+      obj.totalMapRecords = count;
       // turn on dynamic loading if the count is greater than the total # of records,
       // otherwise, turn it off
       obj.dynamicMarkers = count > obj.maxRecords;
@@ -2574,6 +2672,9 @@ TODO:
     else {
       // delete all previous overlays
       obj.deleteOverlays();
+
+      // save the number of records in our current bounds alone
+      this.totalBoundsRecords = count;
 
       if (obj.tileResults) {
         mapView_LoadRectangles({
@@ -2732,7 +2833,7 @@ TODO:
   function mapView_LoadRectangles(args) {
     var obj = args['mapView'];
 
-    var count = args.hasOwnProperty('totalRecords')? args['totalRecords'] : obj.totalRecords;
+    var count = args.hasOwnProperty('totalRecords')? args['totalRecords'] : obj.totalMapRecords;
     var bounds = args.hasOwnProperty('bounds')? args['bounds'] : obj.map.getBounds();
     var dynamic = args.hasOwnProperty('dynamic')? args['dynamic'] : false;
 
@@ -3220,7 +3321,7 @@ TODO:
         tr.append(td);
         td = $('<td></td>');
         td.addClass('DwCFieldView_AttributeValue');
-        if (data.hasOwnProperty(attr)) { td.text(data[attr].toString()); }
+        if (data.hasOwnProperty(attr) && data[attr] !== null) { td.text(data[attr].toString()); }
         else { td.addClass('DwCFieldView_NullValue'); }
         tr.append(td);
         tbody.append(tr);       
@@ -3255,7 +3356,7 @@ TODO:
 
   function fieldView_BuildWordCloud(obj) {
     var wcloud_title;
-    var wcloud_container;
+    var wcloud_cell;
     var wcloud_value;
     var tr;
 
@@ -3271,13 +3372,13 @@ TODO:
     }
 
     // if the word cloud container doesn't exit, add it
-    wcloud_container = obj.fieldTable.find('td.DwCFieldView_WordCloudValue:last');
-    if (wcloud_container.length == 0) {
+    wcloud_cell = obj.fieldTable.find('td.DwCFieldView_WordCloudValue:last');
+    if (wcloud_cell.length == 0) {
       tr = $('<tr></tr>');
       tr.addClass('DwCFieldView_WordCloud');
-      wcloud_container = $('<td colspan="2"></td>');
-      wcloud_container.addClass('DwCFieldView_WordCloudValue');
-      tr.append(wcloud_container);
+      wcloud_cell = $('<td colspan="2"></td>');
+      wcloud_cell.addClass('DwCFieldView_WordCloudValue');
+      tr.append(wcloud_cell);
       obj.fieldTable.append(tr);
     }
 
@@ -3288,7 +3389,7 @@ TODO:
       // scale the size of the font
       wcloud_value.css('font-size', fieldView_CalculateFontSize(obj, value_pair[1]));
       wcloud_value.attr('dwc_fieldvalue', value_pair[0].toString());
-      wcloud_container.append(wcloud_value);
+      wcloud_cell.append(wcloud_value);
 
       // bind the onclick even, if a function was given
       if (typeof(obj.fieldValueOnClick) == 'function') {
@@ -3516,7 +3617,7 @@ TODO:
         if (typeof(this.onHide) == 'function') {
           obj.onHide(this);
         }
-        this.element.hide();
+        this.element.hide(0, null);
       }
     }
 
@@ -3527,7 +3628,7 @@ TODO:
 
       // do nothing if the map view is already visible
       if (this.isHidden()) {
-        this.element.show(function() {
+        this.element.show(0, null, function() {
           // if a callback function was specified for the onShow() event hook
           if (typeof(obj.onShow) == 'function') {
             obj.onShow(obj);
@@ -3566,6 +3667,7 @@ TODO:
         // create checkmarks in order to toggle the fields on/off
         if (obj.recordsTable) {
           cell = $('<td></td>');
+          cell.addClass('DwCFieldsView_FieldRow');
           cell.addClass('DwCFieldsView_AttributeValue');
           cell.addClass('DwCFieldsView_FieldToggleCheckBox');
           checkbox = $('<input type="checkbox" />');

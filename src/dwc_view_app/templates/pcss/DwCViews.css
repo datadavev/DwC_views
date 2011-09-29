@@ -2,6 +2,7 @@
 {% with "#a0a0ff" as header_background_color %}
 {% with "#ccccff" as row1_background_color %}
 {% with "#ffffff" as row2_background_color %}
+{% with "#264057" as default_border_color %}
 
 /******************************************************************
  * DwCViews Styles
@@ -14,8 +15,8 @@ div.DwCViews
   width: 100%;
   overflow: visible;
   border-style: solid;
-  border-color: #000000;
-  border-width: 2px;
+  border-color: {{ default_border_color }};
+  border-width: 3px;
   background-color: #ffffff;
   font-size: 10.5pt;
 }
@@ -24,8 +25,8 @@ div.DwCViews
 {
   width: 100%;
   border-style: solid;
-  border-color: #000000;
-  border-width: 0px 0px 2px 0px;
+  border-color: {{ default_border_color }};
+  border-width: 0px 0px 3px 0px;
   background-color: #C0C0C0;
   overflow: hidden;
   display: inline-block;
@@ -43,16 +44,14 @@ input.DwCViews_SearchBox
 
 div.DwCViews_SearchButton
 {
-  margin: 0px 2px 0px 4px;
+  margin: auto 4px auto 6px;
   float: right;
   cursor: pointer;
-}
-div.DwCViews_SearchButton:after
-{
-  font-size: 0.9em;
-  font-weight: bold;
-  font-family: sans-serif;
-  content: '[@]';
+  background-image: url('/media/img/searchIcon.png');
+  background-repeat: no-repeat;
+  background-position: center;
+  width: 16px;
+  height: 20px;
 }
 
 /* a button-bar that allows the user to switch between different views */
@@ -77,6 +76,9 @@ div.DwCRecordTable_Container
   overflow: hidden;
   overflow-x: auto;
   clear: both;
+  border-style: solid;
+  border-color: {{ default_border_color }};
+  border-width: 0px 0px 3px 0px;
 }
 
 /* the actual DwCRecordTable <table> */
@@ -113,20 +115,25 @@ th,td.DwCRecordTable_ControlsContainer
 {
   float: right;
   margin: 0px 2px 0px 2px;
-}
-.DwCRecordTable_HideButton:after
-{
-  font-size: 0.9em;
-  font-weight: bold;
-  font-family: sans-serif;
-  content: "[X]";
+  background-image: url('/media/img/exIcon.png');
+  background-repeat: no-repeat;
+  background-position: center;
+  width: 16px;
+  height: 20px;
 }
 
 div.DwCRecordTable_SearchButton
 {
   float: left;
-  margin: 0px 2px 0px 2px;
+  margin: auto 4px;
+  cursor: pointer;
+  background-image: url('/media/img/searchIcon.png');
+  background-repeat: no-repeat;
+  background-position: center;
+  width: 16px;
+  height: 20px;
 }
+/*
 div.DwCRecordTable_SearchButton:after
 {
   font-size: 0.9em;
@@ -134,7 +141,7 @@ div.DwCRecordTable_SearchButton:after
   font-family: sans-serif;
   content: "[@]";
 }
-
+*/
 input.DwCRecordTable_SearchBox
 {
   float: left;
@@ -266,7 +273,7 @@ tr.DwCRecordsTable_HeaderRow
   background-color: {{ header_background_color }};
 }
 
-td,th.DwCRecordsTable_FieldHeader
+td.DwCRecordsTable_FieldHeader,th.DwCRecordsTable_FieldHeader
 {
   border-collapse: separate;
   empty-cells: show;
@@ -353,6 +360,9 @@ td.DwCRecordsTable_Value
   font-family: times, serif;
   font-weight: normal;
   font-size: 0.85em;
+  border-style: solid;
+  border-width: 0px 0px 2px 0px;
+  border-color: black;
 }
 
 /* all table cells in the first results row */
@@ -489,7 +499,7 @@ tr.DwCRecordsTable_PagingRow
 
 div.DwCViewPicker_Container
 {
-  width: 29px;
+  width: 36px;
   padding: 2px;
   text-align: center;
   float: left;
@@ -498,13 +508,15 @@ div.DwCViewPicker_Container
 
 div.DwCViewPicker_Button
 {
-  width: 25px;
-  margin: 4px auto 2px auto;
-  text-align: center;
-  font-size: 10.5pt;
-  font-weight: bold;
-  font-family: arial, sans-serif;
   cursor: pointer;
+  width: 32px;
+  height: 42px;
+  margin: 1px 0px;
+  border-style: solid;
+  border-color: #a0a0a0;
+  border-width: 0px 0px 1px 0px;
+  background-repeat: no-repeat;
+  background-position: center;
 }
 div.DwCViewPicker_Button:hover
 {
@@ -513,26 +525,17 @@ div.DwCViewPicker_Button:hover
 
 div.DwCViewPicker_RecordsTableButton
 {
-}
-div.DwCViewPicker_RecordsTableButton:after
-{
-  content: "[R]";
+  background-image: url('/media/img/recordsIcon.png');
 }
 
 div.DwCViewPicker_MapViewButton
 {
-}
-div.DwCViewPicker_MapViewButton:after
-{
-  content: "[M]";
+  background-image: url('/media/img/mapIcon.png');
 }
 
 div.DwCViewPicker_FieldsViewButton
 {
-}
-div.DwCViewPicker_FieldsViewButton:after
-{
-  content: "[F]";
+  background-image: url('/media/img/fieldsIcon.png');
 }
 
 
@@ -634,6 +637,50 @@ div.DwCMapView_Container
   overflow: hidden;
 }
 
+div.DwCMapView_ButtonContainer
+{
+  -moz-box-shadow: 1px 1px 2px #8080ff;
+  -webkit-box-shadow: 1px 1px 2px #8080ff;
+  box-shadow: 1px 1px 2px #8080ff;
+  /* For IE 8 */
+  -ms-filter: "progid:DXImageTransform.Microsoft.Shadow(Strength=4, Direction=135, Color='#8080ff')";
+  /* For IE 5.5 - 7 */
+  filter: progid:DXImageTransform.Microsoft.Shadow(Strength=4, Direction=135, Color='#8080ff');
+  margin: 6px 4px 6px 6px;
+}
+
+div.DwCMapView_MapButton
+{
+  display: inline;
+  cursor: pointer;
+  color: #000000;
+  background-color: #ffffff;
+  padding: 4px 5px 4px 5px;
+  font-size: 10px;
+}
+
+div.DwCMapView_MarkerButton
+{
+}
+div.DwCMapView_MarkerButton:after
+{
+  content: 'Markers';
+}
+
+div.DwCMapView_GridButton
+{
+}
+div.DwCMapView_GridButton:after
+{
+  content: 'Grid';
+}
+
+div.DwCMapView_ActiveMapButton
+{
+  color: #ffffff;
+  background-color: #7f7fff;
+  font-weight: bold;
+}
 
 /******************************************************************
  * DwCFieldView Styles
@@ -645,8 +692,8 @@ div.DwCFieldView_Container
   width: auto;
   margin: auto;
   border-style: solid;
-  border-color: black;
-  border-width: 0px 0px 0px 0px;
+  border-color: {{ default_border_color }};
+  border-width: 0px 0px 3px 0px;
   overflow: hidden;
   overflow-x: auto;
   font-size: 10.5pt;
@@ -654,6 +701,7 @@ div.DwCFieldView_Container
 
 table.DwCFieldView_Table
 {
+  table-layout: fixed;
   width: 100%;
 }
 
@@ -682,10 +730,10 @@ div.DwCFieldView_Title:after
 
 .DwCFieldView_NullValue
 {
-  text-decoration: italic;
 }
 .DwCFieldView_NullValue
 {
+  font-style: italic;
   content: "null";
 }
 
@@ -694,13 +742,11 @@ div.DwCFieldView_HideButton
   float: right;
   margin: 0px 2px 0px 2px;
   cursor: pointer;
-}
-div.DwCFieldView_HideButton:after
-{
-  font-size: 0.9em;
-  font-weight: bold;
-  font-family: sans-serif;
-  content: "[X]";
+  background-image: url('/media/img/exIcon.png');
+  background-repeat: no-repeat;
+  background-position: center;
+  width: 16px;
+  height: 16px;
 }
 
 tr.DwCFieldView_AttributeRow
@@ -710,6 +756,7 @@ tr.DwCFieldView_AttributeRow
 
 td.DwCFieldView_AttributeTitle
 {
+  width: 20%;
   border-collapse: separate;
   empty-cells: show;
   text-align: left;
@@ -720,9 +767,7 @@ td.DwCFieldView_AttributeTitle
   font-family: times, serif;
   font-weight: bold;
   font-size: 0.85em;
-  overflow: hidden;
   background-color: {{ row1_background_color }};
-  width: 15%;
 }
 td.DwCFieldView_AttributeTitle:after
 {
@@ -731,6 +776,7 @@ td.DwCFieldView_AttributeTitle:after
 
 td.DwCFieldView_AttributeValue
 {
+  width: 80%;
   border-collapse: separate;
   empty-cells: show;
   text-align: left;
@@ -743,8 +789,7 @@ td.DwCFieldView_AttributeValue
   font-weight: normal;
   font-size: 0.85em;
   overflow: hidden;
-  background-color {{ row2_background_color }};
-  width: 85%;
+  background-color: {{ row2_background_color }};
 }
 
 tr.DwCFieldView_AttributeRow:last-child td
@@ -756,8 +801,11 @@ td.DwCFieldView_WordCloudTitle
 {
   font-weight: bold;
   background-color: {{ header_background_color }};
+  border-style: solid;
+  border-width: 0px 0px 2px 0px;
+  border-color: black;
 }
-td.DwCFieldView_WordCloudTitle:after
+td.DwCFieldView_WordCloudTitle:before
 {
   content: "Field Values";
 }
@@ -768,15 +816,17 @@ td.DwCFieldView_WordCloudValue
   -ms-box-sizing: border-box;
   -webkit-box-sizing: border-box;
   box-sizing: border-box;
-  padding: 4px 2px 4px 2px;
+  margin: 2px 0px 2px 0px;
   text-align: left;
-  vertical-align: top;
+  border-style: solid;
+  border-color: black;
+  overflow-x: auto;
 }
 
 span.DwCFieldView_WordCloudValue
 {
-  margin: 2px 8px 2px 2px;
-  padding 1px 1px 1px 1px;
+  font-weight: bold;
+  margin: 2px 4px 4px 2px;
   color: #000000;
   cursor: pointer;
 }
@@ -790,6 +840,9 @@ td.DwCFieldView_HistogramTitle
 {
   font-weight: bold;
   background-color: {{ header_background_color }};
+  border-style: solid;
+  border-width: 0px 0px 2px 0px;
+  border-color: black;
 }
 td.DwCFieldView_HistogramTitle:after
 {
@@ -948,6 +1001,7 @@ input.DwCFieldsView_FieldToggleCheckBox
 
 
 
+{% endwith %}
 {% endwith %}
 {% endwith %}
 {% endwith %}

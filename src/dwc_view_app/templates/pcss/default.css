@@ -6,7 +6,6 @@ html, body
 {
   font-family: verdana, arial, helvetica, sans-serif;
   font-size: 13px;
-  line-height: 18px;
   height: 100%;
 }
 
@@ -23,36 +22,46 @@ div, ul, td, th
   box-sizing: border-box;
 }
 
-a { color: #000; }
-a:visited { color: #666; }
-a:hover { color: #fff; background-color:#000; }
+a { color: #ffffff; }
+a:visited { color: #ffffff; }
+a:hover { color: #000000; background-color:#ffffff; }
+a
+{
+  text-decoration: none;
+}
 
 div.PageContainer
 {
-  position: absolute;
-  left: 0px;
-  top: 0px;
   width: {{ page_width }}px;
   padding: 2px;
+  margin: 0px auto;
 }
 
 div.PageHeader
 {
   display: table;
-  background-color: green;
+  color: #ffffff;
+  background-color: #264057;
   width: 100%;
-  text-align: left;
+  font-size: 26pt;
+  font-weight: bold;
+  text-align: center;
   vertical-align: middle;
-  padding: {{ default_padding }}px;
+  -moz-border-radius: 6px;
+  border-radius: 6px;
+  margin: 0px 0px 6px 0px;
+  padding: 16px 4px 16px 4px;
+  font-family: HelveticaNeueLTStd77Bold;
 }
 
 div.BodyContainer
 {
-  background-color: grey;
+  /* background-color: grey; */
   float: left;
   width: 100%;
   min-height: 300px;
-  padding: {{ default_padding }}px;
+  /* padding: {{ default_padding }}px; */
+  margin: 0px 0px 6px 0px;
 }
 
 div.TopMenu
@@ -60,11 +69,13 @@ div.TopMenu
   display: block;
   text-align: center;
   vertical-align: middle;
-  background-color: pink;
+  background-color: #264057;
   width: 100%;
   height: {{ horizontal_menu_height }}px;
   padding: {{ default_padding }}px;
   margin: 0px 0px {{ default_padding }}px 0px;
+  -moz-border-radius: 6px;
+  border-radius: 6px;
 }
 
 div.LeftMenu
@@ -94,12 +105,13 @@ div.RightMenu
 div.MainContent
 {
   display: block;
-  background-color: blue;
+  /* background-color: blue; */
   /*
   margin: 0px 0px 0px {{ vertical_menu_width|add:default_padding }}px;
   */
-  margin 0px {{ default_padding }}px {{ default_padding }}px {{ default_padding }}px;
-  padding: {{ default_padding }}px;
+  margin: 0px {{ default_padding }}px {{ default_padding }}px {{ default_padding }}px;
+  /* padding: {{ default_padding }}px; */
+  padding: 0px;
   width: auto;
   overflow: visible;
 }
@@ -121,10 +133,11 @@ div.MainContent
 
 div.BottomMenu
 {
-  display: table;
+  /* display: table; */
+  display: none;
   text-align: center;
   vertical-align: middle;
-  background-color: pink;
+  /* background-color: pink; */
   width: 100%;
   height: {{ horizontal_menu_height }}px;
   padding: {{ default_padding }}px;
@@ -134,21 +147,29 @@ div.BottomMenu
 div.PageFooter
 {
   display: table;
-  background-color: red;
+  /* background-color: red; */
   width: 100%;
   padding: {{ default_padding }}px;
   text-align: center;
   vertical-align: middle;
+  color: #ffffff;
+  font-size: 12px;
+  background-color: #264057;
+  -moz-border-radius: 6px;
+  border-radius: 6px;
 }
 
 div.TopMenuLinks
 {
   float: left;
+  width: 100%;
+  text-align: left;
 }
 
-input.GenericSearch
+a.TopMenuLink
 {
-  float: right;
+  margin: 2px 12px 2px 12px;
+  font-weight: bold;
 }
 
 div.SubMenu
