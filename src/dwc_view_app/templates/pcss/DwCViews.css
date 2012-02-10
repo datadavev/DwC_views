@@ -21,7 +21,8 @@ div.DwCViews
   font-size: 10.5pt;
 }
 
-.DwCViews_Toolbar
+/* A Toolbar at the very top of the DwC Views Suite */
+div.DwCViews_Toolbar
 {
   width: 100%;
   border-style: solid;

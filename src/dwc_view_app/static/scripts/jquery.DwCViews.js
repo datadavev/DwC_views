@@ -1,29 +1,38 @@
-// ******** //
-/*
-TODO:
-   recordTable: hover over value shows whole value as popup (like image popup)
-   recordTable: formatting
-   recordsTable: cache field option - per field
-   recordsTable: cache fields option - all fields
-   recordsTable: special css class for active (single record) row
-   recordsTable: row number field to be handled in fields array
-   recordsTable: nPage(n) function - jump to page number "n"
-   recordsTable: sort by column not working
-   mapView: search not drawing rectangles
-   mapView: double-click on rectangle should center around rectangle
-   mapView: when tiling, original fitBounds calls an extaneous query
-   all: various hook options
-*/
-// ******** //
+/**
+ * @fileoverview jQuery Plugins for browsing the Darwin Core Database
+ * @author Corey O. Bowers
+ * @version 1.0
+ */
+
+/**
+ * jsdoc hack for jQuery
+ * @class
+ * @name $
+ */
+
+/*************************************
+ *TODO:
+ *  recordTable: hover over value shows whole value as popup (like image popup)
+ *  recordTable: formatting
+ *  recordsTable: cache field option - per field
+ *  recordsTable: cache fields option - all fields
+ *  recordsTable: special css class for active (single record) row
+ *  recordsTable: row number field to be handled in fields array
+ *  recordsTable: nPage(n) function - jump to page number "n"
+ *  recordsTable: sort by column not working
+ *  mapView: search not drawing rectangles
+ *  mapView: when tiling, original fitBounds calls an extaneous query
+ */
+
 (function($) {
 
-  /***************************************************************************
-   * DwCViews
-   *
-   * Creates a self-contained suite of objects for browsing data from a
-   * Darwin Core database.
-   ***************************************************************************/
-
+  /**
+  * @class A suite of objects for browsing data from a Darwin Core database.
+  * @name DwCViews
+  * @constructor
+  * @param {DwCViewsOptions} options an associative array of various options for the DwCViews object
+  * @returns A new DwCViews Plugin Suite object
+  */
   $.DwCViews = function(element, options) {
 
     this.options = {};
@@ -31,6 +40,7 @@ TODO:
     // store this object instance in the main element's .data() attribute
     element.data('DwCViews', this);
 
+    /** @ignore */
     this.init = function(element, option) {
 
       // merge default options and options passed into the function
@@ -40,22 +50,71 @@ TODO:
       this.element = element;
 
       this.fields = this.options.fields;
+      /**
+       * the associated (internal) DwCSearch object
+'      * (most associated plugins will use this as a shared DwCSearch along with its options)
+       * @field
+       * @name search
+       * @memberOf DwCViews
+       */
       this.search = this.options.search;
       this.showToolbar = this.options.showToolbar;
       this.fields = this.options.fields;
+      /**
+       * the associated (internal) DwCRecordTable object
+       * @field
+       * @name recordTable
+       * @memberOf DwCViews
+       */
       this.recordTable = this.options.recordTable;
       this.recordTableOptions = this.options.recordTableOptions;
+      /**
+       * the associated (internal) DwCViewPicker object
+       * @field
+       * @name viewPicker
+       * @memberOf DwCViews
+       */
       this.viewPicker = this.options.viewPicker;
       this.viewPickerOptions = this.options.viewPickerOptions;
+      /**
+       * the associated (internal) DwCRecordsTable object
+       * @field
+       * @name recordsTable
+       * @memberOf DwCViews
+       */
       this.recordsTable = this.options.recordsTable;
       this.recordsTableOptions = this.options.recordsTableOptions;
+      /**
+       * the associated (internal) DwCMapView object
+       * @field
+       * @name mapView
+       * @memberOf DwCViews
+       */
       this.mapView = this.options.mapView;
       this.mapViewOptions = this.options.mapViewOptions;
+      /**
+       * the associated (internal) DwCFieldView object
+       * @field
+       * @name fieldView
+       * @memberOf DwCViews
+       */
       this.fieldView = this.options.fieldView;
       this.fieldViewOptions = this.options.fieldViewOptions;
+      /**
+       * the associated (internal) DwCFieldsView object
+       * @field
+       * @name fieldsView
+       * @memberOf DwCViews
+       */
       this.fieldsView = this.options.fieldsView;
       this.fieldsViewOptions = this.options.fieldsViewOptions;
       this.onInit = this.options.onInit;
+      /**
+       * a user-defined hook, this method is called when DwCViews.search() is called
+       * @function
+       * @name onSearch
+       * @memberOf DwCViews
+       */
       this.onSearch = this.options.onSearch;
 
       views_Initialize(this);
@@ -72,6 +131,14 @@ TODO:
    * DwCViews - Begin Public Functions
    ***************************************************************************/
 
+ 
+    /**
+    * Issue a query among all DwC plugins contained within this instance
+    * @function
+    * @name doSearch
+    * @memberOf DwCViews
+    * @param {string} filter a lucene-compatible query
+    */
     this.doSearch = function(filter) {
       // the search term will become the filter for the shared search object
       this.search.filter = filter;
@@ -119,7 +186,8 @@ TODO:
   /***************************************************************************
    * DwCViews - Namespace Declaration
    ***************************************************************************/
-
+  
+  /** @ignore */
   $.fn.DwCViews = function(options) {
     return this.each(function() {
       (new $.DwCViews($(this), options));
@@ -131,6 +199,7 @@ TODO:
    * DwCViews - Begin Private Functions
    ***************************************************************************/
 
+  /** @private */
   function views_Initialize(obj) {
     var toolbar;
     var search_box;
@@ -445,25 +514,112 @@ TODO:
    * DwCSearch - represents a search/query in the Darwin Core Database
    ***************************************************************************/
 
+  /**
+   * @class an object that represents a DwC search/filter
+   * @name DwCSearch
+   * @memberOf DwCViews
+   * @constructor
+   * @return A new DwCSearch object
+   * @param {DwCSearchOptions} options an associative array of parameters
+   */
   $.DwCViews.DwCSearch = function(options) {
 
     this.options = $.extend({}, $.DwCViews.DwCSearch.defaultOptions, options);
 
+    /**
+     * the address of the darwin core gateway
+     * @field
+     * @name gatewayAddress
+     * @memberOf DwCViews.DwCSearch
+     * @type String
+     */
     this.gatewayAddress = this.options.gatewayAddress;
+    /**
+     * the absolute base path of the darwin core gateway service
+     * @field
+     * @name baseDir
+     * @memberOf DwCViews.DwCSearch
+     * @type String
+     */
     this.baseDir = this.options.baseDir;
+    /**
+     * a lucene-compatible query
+     * @field
+     * @name filter
+     * @memberOf DwCViews.DwCSearch
+     * @type String
+     */
     this.filter = this.options.filter;
+    /**
+     * a lucene-compatible query that will be appended (with an 'AND')
+     * to the filter
+     * @field
+     * @name filterAddendum
+     * @memberOf DwCViews.DwCSearch
+     * @type String
+     */
     this.filterAddendum = this.options.filterAddendum;
+    /**
+     * a list of field names to be included in each record
+     * (may be either a comma separated list, or an array of strings)
+     * @field
+     * @name fields
+     * @memberOf DwCViews.DwCSearch
+     * @type String or Array
+     */
     this.fields = this.options.fields;
+    /**
+     * the starting record index (if count is set)
+     * @field
+     * @name start
+     * @memberOf DwCViews.DwCSearch
+     * @type Integer
+     */
     this.start = this.options.start;
+    /**
+     * total number or records to be retrieved by the search
+     * @field
+     * @name count
+     * @memberOf DwCViews.DwCSearch
+     * @type Integer
+     */
     this.count = this.options.count;
+    /**
+     * the name of the field by which the record set will be ordered
+     * @field
+     * @name sortBy
+     * @memberOf DwCViews.DwCSearch
+     * @type String
+     */
     this.sortBy = this.options.sortBy;
+    /**
+     * sort order (one of either 'asc' or 'desc')
+     * @field
+     * @name sortOrder
+     * @memberOf DwCViews.DwCSearch
+     * @type String
+     */
     this.sortOrder = this.options.sortOrder;
+    /**
+     * A function that is called when the DwCSearch retrieves records from the databse
+     * @function
+     * @name callback
+     * @memberOf DwCViews.DwCSearch
+     * @param {Object} data the JSON object containing records from the Darwin Core Databse
+     */
     this.callback = this.options.callback;
-
     this.data = null;
 
     this.baseURL = this.gatewayAddress + this.baseDir;
 
+    /**
+     * performs the actual query represented by the DwCSearch object and stores the results in the "data" field
+     * @function
+     * @name doSearch
+     * @memberOf DwCViews.DwCSearch
+     * @param {DwCSearchOptions} [options] a DwCSearchOptions associative array that overrides any of the DwCSearch object's internal options
+     * @returns {Object} a handle to the asynchronous ajax call used to do the search
+     */
     this.doSearch = function(options) {
       var obj = this;
       var callback;
@@ -500,6 +656,14 @@ TODO:
       }
     }
 
+    /**
+     * generates a URL search string represented by the DwCSearch object
+     * @function
+     * @name prepareRecordsUrl
+     * @memberOf DwCViews.DwCSearch
+     * @param {DwCSearchOptions} [options] a DwCSearchOptions associative array that overrides any of the DwCSearch object's internal options
+     * @returns {String} the actual search URL that will go to the Darwin Core Gateway
+     */
     // prepares the URL and its options
     this.prepareRecordsUrl = function(options) {
       var params = {};
@@ -554,6 +718,13 @@ TODO:
     }
 
 
+    /**
+     * transforms an array of field names into a comma-deliniated string
+     * @function
+     * @name prepareFieldString
+     * @memberOf DwCViews.DwCSearch
+     * @param {Object} fields an array of field names
+     */
     this.prepareFieldString = function(fields) {
       var fields_string = ""
       $.each(fields, function(i, field) {
@@ -565,6 +736,17 @@ TODO:
     }
 
 
+    /**
+     * fetches the number of records associated with the current DwCSearch object (according to its current options)
+     * @function
+     * @name getRecordsCount
+     * @memberOf DwCViews.DwCSearch
+     * @param {DwCSearchOptions} search_options an associative array of DwCSearchOptions to be used when determining the record count
+     * @param {Function} callback_function a function to be called upon successful retrieval of the record count query.
+     *   This function must take 2 arguments:  1. record number {Integer} and 2. callback_options
+     * @param {Object} callback_options an object that will be passed as an argument to the supplied callback function
+     * @returns {AjaxHandler} a handle to the asynchronous ajax call used to do the search
+     */
     this.getRecordsCount = function(search_options, callback_function, callback_options) {
       // default search_options value
       search_options = typeof(search_options) != 'undefined'? search_options : {};
@@ -587,15 +769,86 @@ TODO:
 
   }
 
+
+  /**
+   * An associative array of options for the DwCSearch object
+   * @class
+   * @name DwCSearchOptions
+   * @memberOf DwCViews
+   */
   $.DwCViews.DwCSearch.defaultOptions = {
+    /**
+     * URL to the server housing DwC Gateway web services
+     * @field
+     * @type String
+     * @memberOf DwCViews.DwCSearchOptions
+     * @name gatewayAddress
+     * @default ""
+     */
     gatewayAddress: "",
+    /**
+     * base path to the DwC web services on the server specified by gatewayAddress
+     * @field
+     * @type String
+     * @memberOf DwCViews.DwCSearchOptions
+     * @name baseDir
+     * @default "/gateway/"
+     */
     baseDir: "/gateway/",
+    /**
+     * a lucene-compatible query that will be appended to each of the internally-generated queries
+     * @field
+     * @type String
+     * @memberOf DwCViews.DwCSearchOptions
+     * @name filter
+     * @default null
+     */
     filter: null,
     filterAddendum: null,
+    /**
+     * comma-separated list of field names to be included in the searche's results
+     * @field
+     * @type String
+     * @memberOf DwCViews.DwCSearchOptions
+     * @name fields
+     * @default null
+     */
     fields: null,
+    /**
+     * zero-based index representing the starting record in the search
+     * @field
+     * @type Integer
+     * @memberOf DwCViews.DwCSearchOptions
+     * @name start
+     * @default 0
+     */
     start: 0,
+    /**
+     * number of records to be returned from the search/query
+     * @field
+     * @type Integer
+     * @memberOf DwCViews.DwCSearchOptions
+     * @name count
+     * @default 25
+     */
     count: 25,
+    /**
+     * name of a single field by which the results will ordered
+     * @field
+     * @type String
+     * @memberOf DwCViews.DwCSearchOptions
+     * @name sortBy
+     * @default null
+     */
     sortBy: null,
+    /**
+     * sort order that is one of two options: "asc" (ascending) and "desc" (descending)
+     * @field
+     * @type String
+     * @memberOf DwCViews.DwCSearchOptions
+     * @name sortOrder
+     * @default "asc"
+     */
     sortOrder: null,
     callback: function(data) { return data; }
   }
@@ -608,27 +861,101 @@ TODO:
    * DwCField - represents a single field from the Darwin Core Database
    ***************************************************************************/
 
+  /**
+  * @class represents a single field from the Darwin Core Database
+  * @name DwCField
+  * @memberOf DwCViews
+  * @constructor
+  * @return A new DwCField object
+  * @param {DwCFieldOptions} options an associative array of parameters
+  */
   $.DwCViews.DwCField = function(options) {
 
     this.options = $.extend({}, $.DwCViews.DwCField.defaultOptions, options);
 
+    /**
+     * the address of the darwin core gateway
+     * @field
+     * @name gatewayAddress
+     * @memberOf DwCViews.DwCField
+     * @type String
+     */
     this.gatewayAddress = this.options.gatewayAddress;
+    /**
+     * the absolute base path of the darwin core gateway service
+     * @field
+     * @name baseDir
+     * @memberOf DwCViews.DwCField
+     * @type String
+     */
     this.baseDir = this.options.baseDir;
     this.callback = this.options.callback;
+    /**
+     * the name of the field that the DwCField object currently represents
+     * (to changes this, users should call the setField() function instead
+     *  of changing it directly)
+     * @field
+     * @name fieldName
+     * @memberOf DwCViews.DwCField
+     * @type String
+     */
     this.fieldName = this.options.fieldName;
+    /**
+     * a lucene-compatible query that can be used to limit values and histogram results
+     * @field
+     * @name filter
+     * @memberOf DwCViews.DwCField
+     * @type String
+     */
     this.filter = this.options.filter;
+    /**
+     * the actual JSON 'field' response from the Darwin Core Gateway
+     * @field
+     * @name fieldData
+     * @memberOf DwCViews.DwCField
+     * @type Object
+     */
     this.fieldData = this.options.fieldData;
     this.fieldDataCallback = this.options.fieldDataCallback;
     this.maxFieldValues = this.options.maxFieldValues;
+    /**
+     * the actual JSON field 'values' response from the Darwin Core Gateway
+     * @field
+     * @name fieldValues
+     * @memberOf DwCViews.DwCField
+     * @type Object
+     */
     this.fieldValues = this.options.fieldValues;
     this.fieldValuesCallback = this.options.fieldValuesCallback;
+    /**
+     * the actual JSON field 'histogram' response from the Darwin Core Gateway
+     * @field
+     * @name fieldHistogram
+     * @memberOf DwCViews.DwCField
+     * @type Object
+     */
     this.fieldHistogram = this.options.fieldHistogram;
+    /**
+     * The number or value ranges (groupings) to be displayed in the histogram
+     * @field
+     * @type Integer
+     * @memberOf DwCViews.DwCField
+     * @name fieldHistogramNBins
+     * @default null
+     */
     this.fieldHistogramNBins = this.options.fieldHistogramnBins;
     this.fieldHistogramCallback = this.options.fieldHistogramCallback;
 
     this.baseURL = this.gatewayAddress + this.baseDir;
 
 
+    /**
+     * Fetches various data pertaining to the Darwin Coare field represented by this object
+     * @function
+     * @name fetchAttributes
+     * @memberOf DwCViews.DwCField
+     * @param {Function} [callback] a function to be performed once the attributes have been retrieved.  This function should first take this DwCField object, then the actual attributes data as parameters.
+     */
     this.fetchAttributes = function(callback) {
       var obj = this;
       var url = this.baseURL + "fields/" + this.fieldName;
@@ -647,6 +974,14 @@ TODO:
     }
 
 
+    /**
+     * fetch a list of all unique values for the Darwin Core field represented by this object
+     * @function
+     * @name fetchValues
+     * @memberOf DwCViews.DwCField
+     * @param {Function} [callback] a function to be performed once the values have been retrieved.
+     *   This function must take 2 arguments: 1. this DwCField object, 2. actual values data.
+     */
     this.fetchValues = function(callback) {
       var obj = this;
       var url_attrs = {};
@@ -681,7 +1016,14 @@ TODO:
       });
     }
 
-
+    /**
+     * fetch a histogram representation of all unique values for the Darwin Core field represented by this object
+     * @function
+     * @name fetchHistogram
+     * @memberOf DwCViews.DwCField
+     * @param {Function} [callback] a function to be performed once the values have been retrieved.
+     *  This must take 2 arguments: 1. this DwCField object, 2. the actual histogram data.
+     */
     this.fetchHistogram = function(callback) {
       var obj = this;
       var url_attrs = {};
@@ -717,19 +1059,95 @@ TODO:
     }
   }
 
-
+  /**
+   * An associative array of options for the DwCField object
+   * @class
+   * @name DwCFieldOptions
+   * @memberOf DwCViews
+   */
   $.DwCViews.DwCField.defaultOptions = {
-    fieldName: null, // required
+    /**
+     * The actual name of the field in the Darwin Core Database.  This option is required
+     * @field
+     * @type String
+     * @memberOf DwCViews.DwCFieldOptions
+     * @name fieldName
+     */
+    fieldName: null,
+    /**
+     * The actual JSON 'field' response from the Darwin Core Gateway
+     * @field
+     * @type Object
+     * @memberOf DwCViews.DwCFieldOptions
+     * @name fieldData
+     * @default null
+     */
     fieldData: null,
     fieldDataCallback: null,
+    /**
+     * The maximum number of distinct values that will be retrieved when DwCField.fetchValues() is invoked
+     * @field
+     * @type Integer
+     * @memberOf DwCViews.DwCFieldOptions
+     * @name maxFieldValues
+     * @default null
+     */
     maxFieldValues: null,
+    /**
+     * The actual JSON field 'values' response from the Darwin Core Gateway
+     * @field
+     * @type Object
+     * @memberOf DwCViews.DwCFieldOptions
+     * @name fieldValues
+     * @default null
+     */
     fieldValues: null,
     fieldValuesCallback: null,
+    /**
+     * The actual JSON field 'histogram' response from the Darwin Core Gateway
+     * @field
+     * @type Object
+     * @memberOf DwCViews.DwCFieldOptions
+     * @name fieldHistogram
+     * @default null
+     */
     fieldHistogram: null,
+    /**
+     * The number or value ranges (groupings) to be displayed in the histogram
+     * @field
+     * @type Integer
+     * @memberOf DwCViews.DwCFieldOptions
+     * @name fieldHistogramNBins
+     * @default null
+     */
     fieldHistogramNBins: null,
     fieldHistogramCallback: null,
+    /**
+     * URL to the server housing DwC Gateway web services
+     * @field
+     * @type String
+     * @memberOf DwCViews.DwCFieldOptions
+     * @name gatewayAddress
+     * @default ""
+     */
     gatewayAddress: '',
+    /**
+     * base path to the DwC web services on the server specified by gatewayAddress
+     * @field
+     * @type String
+     * @memberOf DwCViews.DwCFieldOptions
+     * @name baseDir
+     * @default "/gateway/"
+     */
     baseDir: "/gateway/",
+    /**
+     * a lucene-compatible query that will be used to limit the value and histogram results
+     * @field
+     * @type String
+     * @memberOf DwCViews.DwCFieldOptions
+     * @name filter
+     * @default null
+     */
     filter: null
   }
 
@@ -742,11 +1160,33 @@ TODO:
    * of the Darwin Core Database
    ***************************************************************************/
 
+  /**
+  * @class represents a listing of fields from the Darwin Core Database
+  * @name DwCFields
+  * @memberOf DwCViews
+  * @constructor
+  * @return A new DwCFields object
+  * @param {DwCFieldsOptions} options an associative array of parameters
+  */
   $.DwCViews.DwCFields = function(options) {
 
     this.options = $.extend({}, $.DwCViews.DwCFields.defaultOptions, options);
 
+    /**
+     * the address of the darwin core gateway
+     * @field
+     * @name gatewayAddress
+     * @memberOf DwCViews.DwCFields
+     * @type String
+     */
     this.gatewayAddress = this.options.gatewayAddress;
+    /**
+     * the absolute base path of the darwin core gateway service
+     * @field
+     * @name baseDir
+     * @memberOf DwCViews.DwCFields
+     * @type String
+     */
     this.baseDir = this.options.baseDir;
     this.callback = this.options.callback;
     this.data = null;
@@ -772,9 +1212,41 @@ TODO:
 
   }
 
+  /**
+   * An associative array of options for the DwCFields object
+   * @class
+   * @name DwCFieldsOptions
+   * @memberOf DwCViews
+   */
   $.DwCViews.DwCFields.defaultOptions = {
+    /**
+     * URL to the server housing DwC Gateway web services
+     * @field
+     * @type String
+     * @memberOf DwCViews.DwCFieldsOptions
+     * @name gatewayAddress
+     * @default ""
+     */
     gatewayAddress: '',
+    /**
+     * base path to the DwC web services on the server specified by gatewayAddress
+     * @field
+     * @type String
+     * @memberOf DwCViews.DwCFieldsOptions
+     * @name baseDir
+     * @default "/gateway/"
+     */
     baseDir: "/gateway/",
+    /**
+     * this function will be called every time that this DwCFields
+     * fetchFields() function is called
+     * @field
+     * @type Function
+     * @memberOf DwCViews.DwCFieldsOptions
+     * @name callback
+     * @default null
+     * @param [Object] data the actual JSON object returned from the Darwin Core Gateway fields request
+     */
     callback: null
   }
 
@@ -786,24 +1258,185 @@ TODO:
    * DwCViews - Default Options
    ***************************************************************************/
 
+  /**
+   * @class various options for the DwCViews object
+   * @name DwCViewsOptions
+   * @memberOf DwCViews
+   */
   $.DwCViews.defaultOptions = {
+    /**
+     * the DwCViews suite's internal DwCViews.DwCFields object.
+     * this object will be used to show which fields are available from the Darwin Core Database
+     * @field
+     * @name fields
+     * @memberOf DwCViews.DwCViewsOptions
+     * @type DwCViews.DwCFields
+     * @default new $.DwCViews.DwCFields()
+     */
     fields: new $.DwCViews.DwCFields(),
+    /**
+     * the DwCViews suite's internal DwCViews.DwCSearch object.
+     * this object will be used when any of the internal plugins
+     * query records from the Darwin Core database
+     * @field
+     * @name search
+     * @memberOf DwCViews.DwCViewsOptions
+     * @type DwCViews.DwCSearch
+     * @default new $.DwCViews.DwCSearch()
+     */
     search: new $.DwCViews.DwCSearch(),
+    /**
+     * this value will be displayed in the place of a null value
+     * for all internal DwC plugins
+     * @field
+     * @name globalDefautlValue
+     * @memberOf DwCViews.DwCViewsOptions
+     * @type String
+     * @default ''
+     */
     globalDefaultValue: '',
+    /**
+     * show a small toolbar (which includes a search box)
+     * @field
+     * @name showToolbar
+     * @memberOf DwCViews.DwCViewsOptions
+     * @type Boolean
+     * @default true
+     */
     showToolbar: true,
+    /**
+     * the DwCViews suite's internal DwCRecordTable object.
+     * @field
+     * @name recordTable
+     * @memberOf DwCViews.DwCViewsOptions
+     * @type DwCRecordTable
+     * @default null
+     */
     recordTable: null,
+    /**
+     * options passed to the embedded DwCRecordTable
+     * @field
+     * @name recordTableOptions
+     * @memberOf DwCViews.DwCViewsOptions
+     * @type DwCRecordTable.DwCRecordTableOptions
+     * @default null
+     */
     recordTableOptions: null,
+    /**
+     * the DwCViews suite's internal DwCViewPicker object.
+     * this is the icon bar that allows the user to switch between DwC widget views
+     * @field
+     * @name viewPicker
+     * @memberOf DwCViews.DwCViewsOptions
+     * @type DwCViewPicker
+     * @default new $.DwCViewPicker()
+     */
     viewPicker: null,
+    /**
+     * options passed to the embedded DwCViewPicker
+     * @field
+     * @name viwePickerOptions
+     * @memberOf DwCViews.DwCViewsOptions
+     * @type DwCViewPicker.DwCViewPickerOptions
+     * @default null
+     */
     viewPickerOptions: null,
+    /**
+     * the DwCViews suite's internal DwCRecordsTable object.
+     * this will display a tabuler list of records from the Darwin Core database
+     * @field
+     * @name recordsTable
+     * @memberOf DwCViews.DwCViewsOptions
+     * @type DwCRecordsTable
+     * @default null
+     */
     recordsTable: null,
+    /**
+     * options passed to the embedded DwCRecordsTable
+     * @field
+     * @name recordsTableOptions
+     * @memberOf DwCViews.DwCViewsOptions
+     * @type DwCRecordsTable.DwCRecordsTableOptions
+     * @default null
+     */
     recordsTableOptions: null,
+    /**
+     * the DwCViews suite's internal DwCMapView object.
+     * this will display a spacial (map) view of entries found in the Darwin Core database
+     * @field
+     * @name mapView
+     * @memberOf DwCViews.DwCViewsOptions
+     * @type DwCMapView
+     * @default null
+     */
     mapView: null,
+    /**
+     * options passed to the embedded DwCMapView
+     * @field
+     * @name mapViewOptions
+     * @memberOf DwCViews.DwCViewsOptions
+     * @type DwCMapView.DwCMapViewOptions
+     * @default null
+     */
     mapViewOptions: null,
+    /**
+     * the DwCViews suite's internal DwCFieldView object.
+     * this will display information about a single field available the Darwin Core database
+     * @field
+     * @name fieldView
+     * @memberOf DwCViews.DwCViewsOptions
+     * @type DwCFieldView
+     * @default null
+     */
     fieldView: null,
+    /**
+     * options passed to the embedded DwCFieldView
+     * @field
+     * @name fieldViewOptions
+     * @memberOf DwCViews.DwCViewsOptions
+     * @type DwCFieldView.DwCFieldViewOptions
+     * @default null
+     */
     fieldViewOptions: null,
+    /**
+     * the DwCViews suite's internal DwCFieldsView object.
+     * this will display a list of fields available within the Darwin Core database
+     * @field
+     * @name fieldsView
+     * @memberOf DwCViews.DwCViewsOptions
+     * @type DwCFieldsView
+     * @default null
+     */
     fieldsView: null,
+    /**
+     * options passed to the embedded DwCFieldsView
+     * @field
+     * @name fieldsViewOptions
+     * @memberOf DwCViews.DwCViewsOptions
+     * @type DwCFieldsView.DwCFieldsViewOptions
+     * @default null
+     */
     fieldsViewOptions: null,
+    /**
+     * an optional callback function that is automatically invoked after the DwCViews object first initializes itself
+     * @function
+     * @name onInit
+     * @memberOf DwCViews.DwCViewsOptions
+     * @type Function
+     * @default null
+     * @param {DwCViews} this a the object will pass a reference to itself as the only argument
+     */
     onInit: null,
+    /**
+     * an optional callback function that is invoked when the DwCViews.doSearch() function is called
+     * @function
+     * @name onSearch
+     * @memberOf DwCViews.DwCViewsOptions
+     * @type Function
+     * @default null
+     * @param {DwCViews} this a the object will pass a reference to itself
+     * @param {String} filter the lucene-compatible conditional clause used in the search
+     */
     onSearch: null
   };
 
@@ -819,29 +1452,100 @@ TODO:
    * A table used to view a single record within a Darwin Core Database
    ***************************************************************************/
 
+  /**
+   * @class a plugin that displays fields and values from a single record in the Darwin Core Database
+   * @name DwCRecordTable
+   * @param {DwCRecordTableOptions} options an associative array of options for the DwCRecordTable
+   * @returns a new DwCRecordTable object
+   */
   $.DwCRecordTable = function(element, options) {
 
     this.options = {};
 
     element.data('DwCRecordTable', this);
 
+    /** @ignore */
     this.init = function(element, option) {
 
       this.options = $.extend({}, $.DwCRecordTable.defaultOptions, options);
 
-      // create a handle for our html element
+      /**
+       * the actual html element containing the DwCRecordtable plugin (usually a &lt;div&gt;)
+       * @field
+       * @name element
+       * @memberOf DwCRecordTable
+       * @type Object
+       */
       this.element = element;
 
       // build the base Darwin Core Views URL
       this.baseURL = this.options.gatewayAddress + this.options.baseDir;
 
+      /**
+       * the &lt;tbody&gt; html tag of the &lt;table&gt; element used in the DwCRecordtable plugin
+       * @field
+       * @name tbody
+       * @memberOf DwCRecordTable
+       * @type Object
+       */
       this.tbody = null;
+      /**
+       * this value will be displayed in the place of a null value
+       * @field
+       * @name showToolbar
+       * @memberOf DwCRecordTable
+       * @type String
+       */
       this.globalDefaultValue = this.options.globalDefaultValue;
+      /**
+       * the unique id of the requested Darwin Core record
+       * (this field is required)
+       * @field
+       * @name recordID
+       * @memberOf DwCRecordTable
+       * @type String
+       */
       this.recordID = this.options.recordID;
+      /**
+       * this option determines which field contains the unique identifier for each record
+       * in the Darwin Core Database
+       * @field
+       * @name idField
+       * @memberOf DwCRecordTable
+       * @type String
+       */
       this.idField = this.options.idField;
+      /**
+       * the actual &lt;table&gt; html element used in the DwCRecordTable plugin
+       * @field
+       * @name recordTable
+       * @memberOf DwCRecordTable
+       * @type Object
+       */
       this.recordTable = null;
+      /**
+       * the actual html element representing the hide/close button
+       * @field
+       * @name hideButton
+       * @memberOf DwCRecordTable
+       * @type Object
+       */
       this.hideButton = null;
+      /**
+       * the actual html element representing the search box (typically an &lt;input type="text"&gt; tag)
+       * @field
+       * @name searchBox
+       * @memberOf DwCRecordTable
+       * @type Object
+       */
       this.searchBox = null;
+      /**
+       * the actual html element representing the search box (typically a &lt;div&gt; tag)
+       * @field
+       * @name searchButton
+       * @memberOf DwCRecordTable
+       * @type Object
+       */
       this.searchButton = null;
 
       // if we want this table to be hidden upon initialization
@@ -863,7 +1567,14 @@ TODO:
    * DwCRecordTable - Begin Public Functions
    ***************************************************************************/
 
-  // change the record being displayed by the DwCRecordTable
+  /**
+   * set/change the record being displayed within the DwCRecordTable
+   * @function
+   * @name setRecordID
+   * @memberOf DwCRecordTable
+   * @param {String} id the unique identifier (ID) of the record from the Darwin Core database
+   * @param {Boolean} [show_table=false] if set to true, the DwCRecordTable will be displayed (unhidden)
+   */
   this.setRecordID = function(id, show_table) {
     // default value for show_table (false);
     var show_table = typeof(show_table) != 'undefined'? show_table : false;
@@ -874,7 +1585,12 @@ TODO:
   }
 
 
-  // hide the table (if not already hidden)
+  /**
+   * display/unhide the DwCRecordTable (if it is currently hidden)
+   * @function
+   * @name show
+   * @memberOf DwCRecordTable
+   */
   this.show = function() {
     var element = this.element;
     element.slideDown('slow', function() {
@@ -883,7 +1599,12 @@ TODO:
   }
 
 
-  // show the table (if it is hidden)
+  /**
+   * hide the DwCRecordTable (if it is currently visible)
+   * @function
+   * @name hide
+   * @memberOf DwCRecordTable
+   */
   this.hide = function() {
     var element = this.element;
     element.slideUp('slow', function() {
@@ -892,6 +1613,13 @@ TODO:
   }
 
 
+  /**
+   * populate the DwCRecordTable with the given record data
+   * @function
+   * @name populateTable
+   * @memberOf DwCRecordTable
+   * @param {Object} record the actual json data of the record to be displayed
+   */
   this.populateTable = function(record) {
     var obj = this; // object handle for callback functions
     var i = 1; // field counter
@@ -991,7 +1719,13 @@ TODO:
   }
 
 
-  // returns true of the DwCRecordTable is hidden, false otherwise
+  /**
+   * determines whether or not the DwCRecordTable is currently being displayed
+   * @function
+   * @name isHidden
+   * @memberOf DwCRecordTable
+   * @returns {Boolean} false if the DwCRecordTable is currently hidden, false if it is currently visible
+   */
   this.isHidden = function() {
     var display = this.element.css('display');
     return (!display || display == 'none');
@@ -1011,6 +1745,7 @@ TODO:
    * DwCRecordTable - Namespace Declaration
    ***************************************************************************/
 
+  /** @ignore */
   $.fn.DwCRecordTable = function(options) {
     return this.each(function() {
       (new $.DwCRecordTable($(this), options));
@@ -1022,14 +1757,83 @@ TODO:
    * DwCRecordTable - Default Options
    ***************************************************************************/
 
+  /**
+   * @class
+   * @name DwCRecordTableOptions
+   * @memberOf DwCRecordTable
+   */
   $.DwCRecordTable.defaultOptions = {
+    /**
+     * this option determines whether or not the DwCRecordTable will query and load
+     * data automatically when it is first initialized
+     * @field
+     * @name loadOnInit
+     * @memberOf DwCRecordTable.DwCRecordTableOptions
+     * @type Boolean
+     * @default true
+     */
     loadOnInit: true,
+    /**
+     * this option determines which field contains the unique identifier for each record
+     * in the Darwin Core Database
+     * @field
+     * @name idField
+     * @memberOf DwCRecordTable.DwCRecordTableOptions
+     * @type String
+     * @default "id"
+     */
     idField: "id",
+    /**
+     * the unique id of the requested Darwin Core record
+     * (this field is required)
+     * @field
+     * @name recordID
+     * @memberOf DwCRecordTable.DwCRecordTableOptions
+     * @type String
+     */
     recordID: '',
+    /**
+     * the address of the darwin core gateway
+     * @field
+     * @name gatewayAddress
+     * @memberOf DwCRecordTable.DwCRecordTableOptions
+     * @type String
+     */
     gatewayAddress: "",
+    /**
+     * the absolute base path of the darwin core gateway service
+     * @field
+     * @name baseDir
+     * @memberOf DwCRecordTable.DwCRecordTableOptions
+     * @type String
+     */
     baseDir: "/gateway/",
+    /**
+     * this value will be displayed in the place of a null value
+     * @field
+     * @name globalDefautlValue
+     * @memberOf DwCRecordTable.DwCRecordTableOptions
+     * @type String
+     * @default ''
+     */
     globalDefaultValue: '',
+    /**
+     * will the DwCRecordTable include a "hide" button
+     * @field
+     * @name showHideButton
+     * @memberOf DwCRecordTable.DwCRecordTableOptions
+     * @type Boolean
+     * @default true
+     */
     showHideButton: true,
+    /**
+     * should the DwCRecordTable be hidden by default
+     * @field
+     * @name hideOnInit
+     * @memberOf DwCRecordTable.DwCRecordTableOptions
+     * @type Boolean
+     * @default false
+     */
     hideOnInit: false
   };
 
@@ -1038,6 +1842,7 @@ TODO:
    * DwCRecordTable - Begin Private Functions
    ***************************************************************************/
 
+  /** @private */
   function recordTable_Initialize(obj) {
     var record_table;
 
@@ -1117,6 +1922,7 @@ TODO:
   }
 
 
+  /** @private */
   function recordTable_FetchRecord(obj, show_table) {
     var url = obj.baseURL + 'record/"' + encodeURI(solrEscapeValue(obj.recordID)) + '"';
 
@@ -1146,38 +1952,170 @@ TODO:
    * from a Darwin Core Database
    ***************************************************************************/
 
+  /**
+   * @class a tabular listing of records from the Darwin Core database
+   * @name DwCRecordsTable
+   * @param {DwCRecordsTableOptions} options an associative array of options for the DwCRecordsTable
+   * @returns {DwCRecordsTable} a new instance of the DwCRecordsTable
+   */
   $.DwCRecordsTable = function(element, options) {
 
     this.options = {};
 
     element.data('DwCRecordsTable', this);
 
-    // DwCRecordsTable Constructor
+    /**
+     * @ignore
+     * DwCRecordsTable Constructor
+     */
     this.init = function(element, options) {
 
       this.options = $.extend({}, $.DwCRecordsTable.defaultOptions, options);
 
       var obj = this; // extra handle for callback functions
 
+      /**
+       * the actual html element containing the DwCRecordtable plugin (usually a &lt;div&gt;)
+       * @field
+       * @name element
+       * @memberOf DwCRecordsTable
+       * @type Object
+       */
       this.element = element;
+      /**
+       * the DwCSearch object that will be used to request records from the Darwin Core Database
+       * @field
+       * @name search
+       * @memberOf DwCRecordsTable
+       * @type DwCViews.DwCSearch
+       */
       this.search = this.options.search;
+      /**
+       * the number of records to be shown in on each "page" in the table
+       * @field
+       * @name recordsPerPage
+       * @memberOf DwCRecordsTable
+       * @type Integer
+       */
       this.recordsPerPage = this.options.recordsPerPage;
+      /**
+       * the name of the field by which the records will be sorted
+       * @field
+       * @name sortBy
+       * @memberOf DwCRecordsTable
+       * @type String
+       */
       this.sortBy = this.options.sortBy;
+      /**
+       * sort order (one of either 'asc' or 'desc')
+       * @field
+       * @name sortOrder
+       * @memberOf DwCRecordsTable
+       * @type String
+       */
       this.sortOrder = this.options.sortOrder;
+      /**
+       * an associative array of field names and field metadata
+       * @field
+       * @name fields
+       * @memberOf DwCRecordsTable
+       * @type Object
+       */
       this.fields = this.options.fields;
       this.fields_string = recordsTable_PrepareFieldsString(this.options.fields);
+      /**
+       * whether or not to display the record (row) number as an extra column
+       * @field
+       * @name displayRowNums
+       * @memberOf DwCRecordsTable
+       * @type Boolean
+       */
       this.displayRowNums = this.options.displayRowNums;
+      /**
+       * this value will be displayed in the place of a null value
+       * @field
+       * @name globalDefautlValue
+       * @memberOf DwCRecordsTable
+       * @type String
+       */
       this.globalDefaultValue = this.options.globalDefaultValue;
+      /**
+       * an associated DwCRecordTable that can be used to display a more
+       * complete view of a single record (invoked when a row/record is clicked)
+       * @field
+       * @name recordTable
+       * @memberOf DwCRecordsTable
+       * @type DwCRecordTable
+       */
       this.recordTable = this.options.recordTable;
+      /**
+       * an associated DwCFieldsView that can be synchronized with the
+       * DwCContextMenu field menu when fields/columns are added and removed
+       * @field
+       * @name fieldsView
+       * @memberOf DwCRecordsTable
+       * @type DwCRecordTable
+       */
       this.fieldsView = this.options.fieldsView;
+      /**
+       * this option determines which field contains the unique identifier for each record
+       * in the Darwin Core Database
+       * @field
+       * @name idField
+       * @memberOf DwCRecordsTable
+       * @type String
+       */
       this.idField = this.options.idField;
       this.dbFields = null;
+       /**
+       * the DwCContextMenu used to quickly add/remove fields/columns
+       * @field
+       * @name fieldsMenu
+       * @memberOf DwCRecordsTable
+       * @type DwCContextMenu
+       */     
       this.fieldsMenu = null;
+       /**
+       * a transparent, page-sized container used as a clickable overlay for
+       * recording when a click is made outside of the DwCContextMenu
+       * (usually a &lt;div&gt; html element)
+       * @field
+       * @name overlay
+       * @memberOf DwCRecordsTable
+       * @type Object
+       */     
       this.overlay = null;
 
       // some event hooks
+      /**
+       * this is a callback function that will be automatically invoked when the
+       * DwCRecordsTable is first initialized
+       * @function
+       * @name onInit
+       * @memberOf DwCRecordsTable
+       * @param {DwCRecordsTable} this the DwCRecordsTable will pass itself to this function
+       */
       this.onInit = this.options.onInit;
+      /**
+       * this is a callback function that will be automatically invoked when the
+       * doSearch() function is called
+       * @function
+       * @name onSearch
+       * @memberOf DwCRecordsTable
+       * @param {DwCRecordsTable} this the DwCRecordsTable will pass itself to this function
+       * @param {Object} data the actual JSON object returned from a 'records'
+       *   call returned by the Darwin Core Gateway
+       */
       this.onSearch = this.options.onSearch;
+      /**
+       * this is a callback function that will be automatically invoked when a row
+       * on the DwCRecordsTable is clicked
+       * @function
+       * @name onRowClick
+       * @memberOf DwCRecordsTable
+       * @param {DwCRecordsTable} this the DwCRecordsTable will pass itself to this function
+       * @param {Object} row the actual &lt;tr&gt; html element of the row that was clicked
+       */
       this.onRowClick = this.options.onRowClick;
 
       // internal state variables
@@ -1217,8 +2155,14 @@ TODO:
    * DwCRecordsTable - Begin Public Functions
    ***************************************************************************/
 
-    // display record count/page information
-    this.updateLabel = function(data) {
+    /**
+     * update/refresh the displayed paging information (records count/page)
+     * @function
+     * @name updatePagingInfo
+     * @memberOf DwCRecordsTable
+     * @param {Object} data the JSON data returned from a records query
+     */
+    this.updatePagingInfo = function(data) {
       var label = "Showing Results: ";
       label += (data.start + 1) + " - ";
       if ((data.start + this.recordsPerPage) > this.total) {
@@ -1230,15 +2174,26 @@ TODO:
       this.element.find(".DwCRecordsTable_PagingInfo").text(label);
     }
 
-    // resets the paging state back to the defaults
-    // (i.e. first page, default sort, ascending order)
+    /**
+     * resets the paging state back to the defaults
+     * (i.e. first page, default sort, ascending order)
+     * @function
+     * @name resetPagingState
+     * @memberOf DwCRecordsTable
+     */
     this.resetPagingState = function() {
       this.start = 0;
       this.sortBy = null;
       this.sortOrder = 'asc';
     }
 
-    // display Darwin Core records
+    /**
+     * fill the table with records from the Darwin Core database
+     * @function
+     * @name populateRecordsData
+     * @memberOf DwCRecordsTable
+     * @param {Object} data the actual 'records' JSON response from the Darwin Core Gateway
+     */
     this.populateRecordsData = function(data) {
       var tbody = this.recordsTable.find('tbody:last');
       var obj = this; // handle on our "this" object for the callbacks
@@ -1334,18 +2289,27 @@ TODO:
     }
 
 
-    // clears the data in the table and updates and
-    // repopulates it.  Also updates the paging information
-    // in the footer
+    /**
+     * clear then repopulate all data and paging info in the table with the given data
+     * @function
+     * @name refreshData
+     * @memberOf DwCRecordsTable
+     * @param {Object} data JSON records data from the Darwin Core Database
+     */
     this.refreshData = function(data) {
       this.total = parseInt(data.numFound);
       this.populateRecordsData(data);
-      this.updateLabel(data);
+      this.updatePagingInfo(data);
     }
 
 
-    // fetch data from the Darwin Core database (if not already cached)
-    // cached=false will ignore any existing cache and overwrite it
+    /**
+     * fetch records from the Darwin Core database and populate the table
+     * @function
+     * @name fetchRecords
+     * @memberOf DwCRecordsTable
+     * @param {Boolean} [cached=false] if true, will attempt to use the internally cached data instead of fetching it from the database
+     */
     this.fetchRecords = function(cached) {
       var obj = this; // object handler for callback functions
 
@@ -1384,7 +2348,14 @@ TODO:
     }
 
 
-    // add a field (column) to the table
+    /**
+     * add a field (column) to the DwCRecordsTable
+     * @function
+     * @name addField
+     * @memberOf DwCRecordsTable
+     * @param {String} field_name the name of the field that you wish to add
+     * @param {Object} field_info an associative array of metadata for the given field
+     */
     this.addField = function(field_name, field_info) {
       // if we already have field info, merely extend it rather than replace it
       if (field_name in this.fields) {
@@ -1407,7 +2378,13 @@ TODO:
     }
 
 
-    // remove a field (column) from the table
+    /**
+     * remove a field (column) from the DwCRecordsView
+     * @function
+     * @name removeField
+     * @memberOf DwCRecordsTable
+     * @param {String} field_name the name of the field to be removed
+     */
     this.removeField = function(field_name) {
       if (field_name in this.fields) {
         this.fields[field_name]['display'] = false;
@@ -1426,6 +2403,14 @@ TODO:
     }
 
 
+    /**
+     * toggle the display of a field/column (display if hidden, hide if displayed)
+     * @function
+     * @name toggleField
+     * @memberOf DwCRecordsTable
+     * @param {String} field_name the name of the field that you wish toggle
+     * @param {Object} field_info an associative array of metadata for the given field
+     */
     this.toggleField = function(field_name, field_info) {
       if (field_name in this.fields && this.fields[field_name]['display']) {
         this.removeField(field_name);
@@ -1435,10 +2420,15 @@ TODO:
     }
 
 
-    // Sort by a specific field.  Current sort order
-    // (i.e. "asc" / "desc") will be used.  If the table is
-    // is already sorted by the given field, this function
-    // will simply toggle the sort order.
+    /**
+     * sort the contents of of the table by the given field.  the current sort order will
+     * be used.  if the tale is already sorted by the given field, the sort order will
+     * be reversed
+     * @function
+     * @name sortByField
+     * @memberOf DwCRecordsTable
+     * @param {String} field_name the name of the field by which the table will be sorted
+     */
     this.sortByField = function(field_name) {
       // are we reordering?
       if (this.sortBy == field_name) {
@@ -1452,7 +2442,12 @@ TODO:
     }
 
 
-    // get the next record results page
+    /**
+     * display the next page of records (if not already on the last page)
+     * @function
+     * @name nextPage
+     * @memberOf DwCRecordsTable
+     */
     this.nextPage = function() {
       if ((this.start + this.recordsPerPage) < this.total) {
         this.start = this.start + this.recordsPerPage;
@@ -1461,7 +2456,12 @@ TODO:
     }
 
 
-    // get the next record results page
+    /**
+     * display the previous page of records (if not already on the first page)
+     * @function
+     * @name prevPage
+     * @memberOf DwCRecordsTable
+     */
     this.prevPage = function() {
       if ((this.start - this.recordsPerPage) >= 0) {
         this.start = this.start - this.recordsPerPage;
@@ -1469,7 +2469,12 @@ TODO:
       }
     }
 
-
+    /**
+     * display the first page of records (if not already on the first page)
+     * @function
+     * @name firstPage
+     * @memberOf DwCRecordsTable
+     */
     // get the first record results page
     this.firstPage = function() {
       this.start = 0;
@@ -1477,6 +2482,12 @@ TODO:
     }
 
 
+    /**
+     * display the last page of records (if not already on the last page)
+     * @function
+     * @name lastPage
+     * @memberOf DwCRecordsTable
+     */
     // get the next record results page
     this.lastPage = function() {
       if (this.total > this.recordsPerPage) {
@@ -1500,6 +2511,7 @@ TODO:
    * DwCRecordsTable - Namespace Declaration
    ***************************************************************************/
 
+  /** @ignore */
   $.fn.DwCRecordsTable = function(options) {
     return this.each(function() {
       (new $.DwCRecordsTable($(this), options));
@@ -1511,21 +2523,141 @@ TODO:
    * DwCRecordsTable - Default Options
    ***************************************************************************/
 
-  // default plugin options
+  /**
+   * @class
+   * @name DwCRecordsTableOptions
+   * @memberOf DwCRecordsTable
+   */
   $.DwCRecordsTable.defaultOptions = {
+    /**
+     * whether or not the DwCRecordsTable will query and
+     * display data upon initialization
+     * @field
+     * @name loadOnInit
+     * @memberOf DwCRecordsTable.DwCRecordsTableOptions
+     * @type Boolean
+     * @default true
+     */
     loadOnInit: true,
     //fields: new $.DwCViews.DwCFields(),
+    /**
+     * the DwCSearch object used to query for records from
+     * the Darwin Core database
+     * @field
+     * @name search
+     * @memberOf DwCRecordsTable.DwCRecordsTableOptions
+     * @type DwCViews.DwCSearch
+     * @default new $.DwCViews.DwCSearch()
+     */
     search: new $.DwCViews.DwCSearch(),
+    /**
+     * the number of records to be shown in on each "page" in the table
+     * @field
+     * @name recordsPerPage
+     * @memberOf DwCRecordsTable.DwCRecordsTableOptions
+     * @type Integer
+     * @default 25
+     */
     recordsPerPage: 25,
+    /**
+     * the name of the field by which the records will be sorted
+     * @field
+     * @name sortBy
+     * @memberOf DwCRecordsTable.DwCRecordsTableOptions
+     * @type String
+     * @default null
+     */
     sortBy: null,
+    /**
+     * sort order (one of either 'asc' or 'desc')
+     * @field
+     * @name sortOrder
+     * @memberOf DwCRecordsTable.DwCRecordsTableOptions
+     * @type String
+     * @default 'asc'
+     */
     sortOrder: 'asc',
+    /**
+     * whether or not to display the record (row) number as an extra column
+     * @field
+     * @name displayRowNums
+     * @memberOf DwCRecordsTable.DwCRecordsTableOptions
+     * @type Boolean
+     * @default true
+     */
     displayRowNums: true,
+    /**
+     * this value will be displayed in the place of a null value
+     * @field
+     * @name globalDefautlValue
+     * @memberOf DwCRecordsTable.DwCRecordsTableOptions
+     * @type String
+     * @default ''
+     */
     globalDefaultValue: '',
+    /**
+     * an associated DwCRecordTable that can be used to display a more
+     * complete view of a single record (invoked when a row/record is clicked)
+     * @field
+     * @name recordTable
+     * @memberOf DwCRecordsTable.DwCRecordsTableOptions
+     * @type DwCRecordTable
+     * @default null
+     */
     recordTable: null,
+    /**
+     * an associated DwCFieldsView that can be synchronized with the
+     * DwCContextMenu field menu when fields/columns are added and removed
+     * @field
+     * @name fieldsView
+     * @memberOf DwCRecordsTable.DwCRecordsTableOptions
+     * @type DwCRecordTable
+     * @default null
+     */
     fieldsView: null,
+    /**
+     * this option determines which field contains the unique identifier for each record
+     * in the Darwin Core Database
+     * @field
+     * @name idField
+     * @memberOf DwCRecordsTable.DwCRecordsTableOptions
+     * @type String
+     * @default 'id'
+     */
     idField: 'id',
+    /**
+     * this is a callback function that will be automatically invoked when the
+     * DwCRecordsTable is first initialized
+     * @function
+     * @name onInit
+     * @memberOf DwCRecordsTable.DwCRecordsTableOptions
+     * @param {DwCRecordsTable} this the DwCRecordsTable will pass itself to this function
+     * @default null
+     */
     onInit: null,
+    /**
+     * this is a callback function that will be automatically invoked when the
+     * doSearch() function is called
+     * @function
+     * @name onSearch
+     * @memberOf DwCRecordsTable.DwCRecordsTableOptions
+     * @param {DwCRecordsTable} this the DwCRecordsTable will pass itself to this function
+     * @param {Object} data the actual JSON object returned from a 'records'
+     *   call returned by the Darwin Core Gateway
+     * @default null
+     */
     onSearch: null,
+    /**
+     * this is a callback function that will be automatically invoked when a row
+     * on the DwCRecordsTable is clicked
+     * @function
+     * @name onRowClick
+     * @memberOf DwCRecordsTable.DwCRecordsTableOptions
+     * @param {DwCRecordsTable} this the DwCRecordsTable will pass itself to this function
+     * @param {Object} row the actual &lt;tr&gt; html element of the row that was clicked
+     * @default by default, when a row is clicked, an associated DwCRecordTable will be
+     *   displayed with the Darwin Core record corresponding to that row
+     */
     onRowClick: function(records_table, row) {
       // this click will do nothing if there is no associated record table
       if (records_table.recordTable != null) {
@@ -1533,6 +2665,16 @@ TODO:
         records_table.recordTable.setRecordID(id, true);
       }
     },
+    /**
+     * an associative array listing all fields that will be displayed as
+     * well as metadata to for each of the fields.  each entry shall
+     * be in the format:<br /><br />
+     * &lt;field&gt;: { "display":&lt;Boolean&gt;, "name":&lt;field_name&gt;, "label":&lt;label&gt; }
+     * @field
+     * @name fields
+     * @memberOf DwCRecordsTable.DwCRecordsTableOptions
+     * @type Object
+     */
     fields: {
       "id" : {
         "display": true,
@@ -1563,6 +2705,7 @@ TODO:
    ***************************************************************************/
 
   // style-ize elements and add table
+  /** @private */
   function recordsTable_Initialize(obj) {
     var records_table;
 
@@ -1578,6 +2721,7 @@ TODO:
   }
 
   // ceate / style-ize column headers
+  /** @private */
   function recordsTable_PrepareHeader(obj) {
     var cell;
     var sorter;
@@ -1634,6 +2778,7 @@ TODO:
 
 
   // set up the <tbody>, which will house the records data
+  /** @private */
   function recordsTable_PrepareBody(obj) {
     // if no <tbody> was defined in the base HTML,
     // add it to the DwCRecordsTable
@@ -1651,6 +2796,7 @@ TODO:
 
 
   // create / style-ize table footer and buttons
+  /** @private */
   function recordsTable_PrepareFooter(obj) {
     // how many columns are in our table?
     var column_count = obj.recordsTable.find(".DwCRecordsTable_HeaderRow:last")[0].cells.length;
@@ -1722,12 +2868,14 @@ TODO:
 
 
   // remove a field header given the field's name
+  /** @private */
   function recordsTable_RemoveFieldHeader(obj, field_name) {
     obj.recordsTable.find('.DwCRecordsTable_FieldHeader[dwcviews_field="' + field_name + '"]').remove();
   }
 
 
   // fetch a list of available fields from the database records
+  /** @private */
   function recordsTable_FetchFieldInfo(obj) {
     url = obj.search.gatewayAddress + obj.search.baseDir + "fields";
     $.getJSON(url, function(db_fields) {
@@ -1738,6 +2886,7 @@ TODO:
 
 
   // sort fields by their display order
+  /** @private */
   function recordsTable_SortFields(fields) {
     var sorted_fields = {};
     var weight_pairs = {};
@@ -1791,6 +2940,7 @@ TODO:
   
   // turns all of the keys in an associative array into a
   // comma-dilineated string
+  /** @private */
   function recordsTable_PrepareFieldsString(fields) {
     var fields_string = "";
     var is_first = true;
@@ -1807,6 +2957,7 @@ TODO:
   }
 
 
+  /** @private */
   function recordsTable_CreateFieldsMenu(obj, db_fields) {
     // create a common overlay, if none exists
     if (obj.overlay == null) {
@@ -1862,6 +3013,13 @@ TODO:
    * Darwin Core database based on the longitude and latitude values
    ***************************************************************************/
 
+  /**
+   * @class a "spatial" (visual map) view of the given records in a Darwin Core database based on each entry's long/lat values
+   * @name DwCMapView
+   * @constructor
+   * @param {DwCMapViewOptions} options an associative array of options for the DwCMapView
+   * @returns {Object} a new instance of the DwCMapView object
+   */
   $.DwCMapView = function(element, options) {
 
     this.options = {};
@@ -1869,6 +3027,7 @@ TODO:
     // store this object instance in the main element's .data() attribute
     element.data('DwCMapView', this);
 
+    /** @ignore */
     this.init = function(element, option) {
       var obj = this; // object handle for callback functions
       var search_options = {};
@@ -1876,43 +3035,301 @@ TODO:
       // merge default options and options passed into the function
       this.options = $.extend({}, $.DwCMapView.defaultOptions, options);
 
-      // create a handle on the DOM element
+      /**
+       * the actual html container that contains the DwCMapView
+       * (generally a &lt;div&gt; tag)
+       * @field
+       * @name element
+       * @memberOf DwCMapView
+       * @type Object
+       */
       this.element = element;
 
-      this.map = null; // the actual google maps object
+      /**
+       * the actual google.maps.map api v3 object
+       * @field
+       * @name map
+       * @memberof DwCMapView
+       * @type google.maps.map
+       */
+      this.map = null;
+      /**
+       * the actual html (DOM) element serving as the marker button
+       * (i.e. the button that turns marker display on and off)
+       * @field
+       * @name markerButton
+       * @memberOf DwCMapView
+       * @type Object
+       */
       this.markerButton = null;
+      /**
+       * the actual html (DOM) element serving as the grid button
+       * (i.e. the button that turns the grid view on and off)
+       * @field
+       * @name gridButton
+       * @memberOf DwCMapView
+       * @type Object
+       */
       this.gridButton = null;
+      /**
+       * the associated (internal) DwCSearch object that will
+       * be used to query records from the Darwin Core database
+       * @field
+       * @name search
+       * @memberOf DwCMapView
+       * @type DwCViews.DwCSearch
+       */
       this.search = this.options.search;
+      /**
+       * the name of the field containing the unique identifier for each record
+       * in the Darwin Core Database
+       * @field
+       * @name idField
+       * @memberOf DwCMapView
+       * @type String
+       */
       this.idField = this.options.idField;
+      /**
+       * the name of the field that contains the latitude
+       * information for each record in the Darwin Core Database
+       * @field
+       * @name latitudeField
+       * @memberOf DwCMapView
+       * @type String
+       */
       this.latitudeField = this.options.latitudeField;
+      /**
+       * this option determines which field contains the longitude
+       * information for each record in the Darwin Core Database
+       * @field
+       * @name longitudeField
+       * @memberOf DwCMapView
+       * @type String
+       */
       this.longitudeField = this.options.longitudeField;
+      /**
+       * the name of the field that will act as the
+       * title (the popup text) for each marker on the DwCMapView
+       * @field
+       * @name titleField
+       * @memberOf DwCMapView
+       * @type String
+       */
       this.titleField = this.options.titleField;
       this.recordsTable = this.options.recordsTable;
+      /**
+       * the current zoom level of the google map
+       * @field
+       * @name zoom
+       * @memberOf DwCMapView
+       * @type Integer
+       */
       this.zoom = this.options.zoom;
+      /**
+       * the type of google map to use (i.e. HYBRID, ROADMAP, SATELLITE, or TERRAIN)
+       * @field
+       * @name mapTypeId
+       * @memberOf DwCMapView
+       * @type google.maps.MapTypeId
+       */
       this.mapTypeId = this.options.mapTypeId;
+      /**
+       * a google.maps.LatLng (API V3) object representing the coordinates
+       * of the center of the map's current display bounds
+       * @field
+       * @name center
+       * @memberOf DwCMapView
+       * @type Object
+       */
       this.center = this.options.center;
+      /**
+       * if this option is set to true, the DwCMapView will query for
+       * records in smaller, individual groups (based on geographic ranges).
+       * the grid view uses this
+       * @field
+       * @name tileResults
+       * @memberOf DwCMapView
+       * @type Boolean
+       */
       this.tileResults = this.options.tileResults;
+      /**
+       * an associative array of every google.maps.Marker (API V3)
+       * objects to be displayed on the map
+       * @field
+       * @name markers
+       * @memberOf DwCMapView
+       * @type Object
+       */
       this.markers = this.options.markers;
+      /**
+       * an array of every google.maps.Rectangle (API V3)
+       * objects to be displayed on the map (i.e. in grid view)
+       * @field
+       * @name rectangles
+       * @memberOf DwCMapView
+       * @type Object
+       */
       this.rectangles = this.options.rectangles;
       this.autoCenter = this.options.autoCenter;
+      /**
+       * the maximum number of records to be returned by each query
+       * (translating into the maximum number of markers to be displayed)
+       * If a given query results in more than the maximum number of records,
+       * a random sample of those records will be returned
+       * @field
+       * @name maxRecords
+       * @memberOf DwCMapView
+       * @type Integer
+       */
       this.maxRecords = this.options.maxRecords;
+      /**
+       * if this option is set to true, a grid will be painted
+       * over the map color-coated to show which areas  have a
+       * more dense concentration of records associated with that area
+       * @field
+       * @name showGrid
+       * @memberOf DwCMapView
+       * @type Boolean
+       */
       this.showGrid = this.options.showGrid;
       this.showMarkers = this.options.showMarkers;
+      /**
+       * when the 'tileResults' field is set to true, this determines
+       * how many equally-sized rows (latitudinal groupings) will be used
+       * @field
+       * @name tileRows
+       * @memberOf DwCMapView
+       * @type Integer
+       */
       this.tileRows = this.options.tileRows;
+      /**
+       * when the 'tileResults' field is set to true, this determines
+       * how many equally-sized columns (longitudinal groupings) will be used
+       * @field
+       * @name tileCols
+       * @memberOf DwCMapView
+       * @type Integer
+       */
       this.tileCols = this.options.tileCols;
+      /**
+       * when the 'tileResults' field is set to true, this determines
+       * the maximum number of records/markers that will be displayed
+       * within each tile (if the total count is higher than the maximum
+       * number, a random subset will be used)
+       * @field
+       * @name maxMarkersPerTile
+       * @memberOf DwCMapView
+       * @type Integer
+       */
       this.maxMarkersPerTile = this.options.maxMarkersPerTile;
+      /**
+       * the opacity of each rectangle's colored overlay
+       * (value from 0 - 1)
+       * @field
+       * @name rectangleOpacity
+       * @memberOf DwCMapView
+       * @type Decimal
+       */
       this.rectangleOpacity = this.options.tileOpacity;
+      /**
+       * the width of each rectangle's border
+       * @field
+       * @name rectangleStrokeWeight
+       * @memberOf DwCMapView
+       * @type Integer
+       */
       this.rectangleStrokeWeight = this.options.rectangleStrokeWeight;
+      /**
+       * the color of each rectangle's border
+       * @field
+       * @name rectangleStrokeColor
+       * @memberOf DwCMapView
+       * @type String
+       */
       this.rectangleStrokeColor = this.options.rectangleStrokeColor;
+      /**
+       * the opacity of each rectangle's border lines
+       * (value between 0 - 1)
+       * @field
+       * @name rectangleStrokeOpacity
+       * @memberOf DwCMapView
+       * @type Decimal
+       */
       this.rectangleStrokeOpacity = this.options.rectangleStrokeOpacity;
 
       // some event hook handlers
+      /**
+       * an optional callback function that is automatically invoked after
+       * the DwCMapView object first initializes itself
+       * @function
+       * @name onInit
+       * @memberOf DwCMapView
+       * @type Function
+       * @param {DwCViews} this the object will pass a reference to itself as the only argument
+       */
       this.onInit = this.options.onInit;
+      /**
+       * an optional callback function that is automatically invoked
+       * when a marker is clicked
+       * @function
+       * @name onMarkerClick
+       * @memberOf DwCMapView
+       * @type Function
+       * @param {DwCViews} this the object will pass a reference to itself
+       * @param {DwCViews} marker the google.maps.Marker object that was clicked
+       */
       this.onMarkerClick = this.options.onMarkerClick;
+      /**
+       * an optional callback function that is automatically invoked
+       * when a rectangle (or grid cell) is clicked
+       * @function
+       * @name onRectangleClick
+       * @memberOf DwCMapView
+       * @type Function
+       * @param {DwCViews} this the object will pass a reference to itself
+       * @param {DwCViews} marker the google.maps.Rectangle object that was clicked
+       */
       this.onRectangleClick = this.options.onRectangleClick;
+      /**
+       * an optional callback function that is automatically invoked
+       * when a rectangle (or grid cell) is double-clicked
+       * @function
+       * @name onRectangleDoubleClick
+       * @memberOf DwCMapView
+       * @type Function
+       * @param {DwCViews} this the object will pass a reference to itself
+       * @param {DwCViews} marker the google.maps.Rectangle object that was double-clicked
+       */
       this.onRectangleDoubleClick = this.options.onRectangleDoubleClick;
+      /**
+       * an optional callback function that is automatically invoked after
+       * the DwCMapView Search() function is called
+       * @function
+       * @name onSearch
+       * @memberOf DwCMapView
+       * @type Function
+       * @param {DwCViews} this the object will pass a reference to itself as the only argument
+       */
       this.onSearch = this.options.onSearch;
+      /**
+       * an optional callback function that is automatically invoked when the
+       * the DwCMapView Show() function is called
+       * @function
+       * @name onShow
+       * @memberOf DwCMapView
+       * @type Function
+       * @param {DwCViews} this the object will pass a reference to itself as the only argument
+       */
       this.onShow = this.options.onShow;
+      /**
+       * an optional callback function that is automatically invoked when the
+       * the DwCMapView Hide() function is called
+       * @function
+       * @name onHide
+       * @memberOf DwCMapView
+       * @type Function
+       * @param {DwCViews} this the object will pass a reference to itself as the only argument
+       */
       this.onHide = this.options.onHide;
 
       // some internal variable used to help set and maintain map state
@@ -1932,6 +3349,14 @@ TODO:
       this.defaultFilterAddendum += solrEscapeValue(this.longitudeField) + ':[\-180 TO 180]';
 
       // allows us to kill an ajax call already in progress
+      /**
+       * an array of all ajax handlers (typically used when 'tileResults' is
+       * set to true).  this can be used to cancel any active/unfinished queries
+       * @field
+       * @name ajaxHandlers
+       * @memberOf DwCMapView
+       * @type Array
+       */
       this.ajaxHandlers = [];
 
       mapView_Initialize(this);
@@ -1965,8 +3390,13 @@ TODO:
    * DwCMapView - Begin Public Functions
    ***************************************************************************/
 
-    // save the LatLngBounds box of the map's current view
-    // (this allows us to restore the zoom/center later)
+    /**
+     * save various size, zoom, and location attributes of the Google Map
+     * (this allows the map to be restored to the same attributes later)
+     * @function
+     * @name saveState
+     * @memberOf DwCMapView
+     */
     this.saveState = function() {
       this.lastKnownWidth = this.element.width();
       this.lastKnownHeight = this.element.height();
@@ -1976,8 +3406,14 @@ TODO:
     }
 
 
-    // restores the map's last saved zoom/center
-    // if force_refresh == yes, the map will be forced to re-query
+
+    /**
+     * restores the map's last attributes (as recorded by the saveState() function)
+     * @function
+     * @name restoreState
+     * @memberOf DwCMapView
+     * @param {Boolean} [force_refresh=false] if true, forces a re-query of all records
+     */
     this.restoreState = function(force_refresh) {
       // if the object is not visible (hidden), don't do anything at all
       if (this.isHidden()) {
@@ -2014,13 +3450,23 @@ TODO:
     }
 
 
-    // returns true if the map view is hidden, false if it is visible
+    /**
+     * returns true if the map view is hidden, false if it is visible
+     * @function
+     * @name isHidden
+     * @memberOf DwCMapView
+     */
     this.isHidden = function() {
       return !this.element.is(":visible");
     }
 
 
-    // hide this plugin
+    /**
+     * hide the DwCMapView (if it is currently visible)
+     * @function
+     * @name hide
+     * @memberOf DwCMapView
+     */
     this.hide = function() {
       // don't do anything if the map view is already hidden
       if (!this.isHidden()) {
@@ -2034,7 +3480,12 @@ TODO:
     }
 
 
-    // show this plugin (only if it is hidden)
+    /**
+     * display/unhide the DwCMapView (if it is currently hidden)
+     * @function
+     * @name show
+     * @memberOf DwCMapView
+     */
     this.show = function() {
       var obj = this;
 
@@ -2051,6 +3502,13 @@ TODO:
     }
 
 
+    /**
+     * stop any unfinished ajax calls/queries that the DwCMapView object may have pending
+     * (this will also prevent their associated callback functions)
+     * @function
+     * @name cancelAjaxCalls
+     * @memberOf DwCMapView
+     */
     this.cancelAjaxCalls = function() {
       var obj = this;
       $.each(this.ajaxHandlers, function(i, ajax_handler) {
@@ -2064,7 +3522,12 @@ TODO:
     }
 
 
-    // set active/inactive button styles
+    /**
+     * set appropriate active/inactive CSS classes on the custom map button
+     * @function
+     * @name refreshButtonStates
+     * @memberOf DwCMapView
+     */
     this.refreshButtonStates = function() {
       // marker button
       if (this.showMarkers && this.markerButton) {
@@ -2084,9 +3547,16 @@ TODO:
     }
 
 
-    this.displayMarkers = function(display) {
+    /**
+     * alters the settings so that the map will only display markers
+     * @function
+     * @name displayMarkers
+     * @memberOf DwCMapView
+     * @param {Boolean} [show=true] set to false if you wish to prevent/delay the markers from actually being shown
+     */
+    this.displayMarkers = function(show) {
       var original_state = this.showMarkers;
-      this.showMarkers = typeof(display) != 'undefined'? display : true;
+      this.showMarkers = typeof(show) != 'undefined'? display : true;
       // re-query/re-draw if necessary
       if (this.showMarkers != original_state)  {
         this.reload();
@@ -2095,6 +3565,13 @@ TODO:
     }
 
 
+    /**
+     * alters the settings so that the map will only display the grid
+     * @function
+     * @name displayGrid
+     * @memberOf DwCMapView
+     * @param {Boolean} [show=true] set to false if you wish to prevent/delay the grid from actually being shown
+     */
     this.displayGrid = function(display) {
       display = typeof(display) != 'undefined'? display : true;
 
@@ -2110,7 +3587,16 @@ TODO:
     }
 
 
-    // add a marker (icon) to the map
+    /**
+     * creates a google.maps.Marker object and adds it to the internal Google Map
+     * @function
+     * @name addMarker
+     * @memberOf DwCMapView
+     * @param {String} key a string indentifier for this marker (may be used to access this marker)
+     * @param {Object} [marker_options] a google.maps.MarkerOptions object as defined in the Google Maps V3 API
+     * @param {Object} [marker_values] after the google.maps.Marker object is created, this will be passed to the marker's setValues() function as defined in the Google Maps V3 API
+     * @returns {Object} A google.maps.Marker object
+     */
     this.addMarker = function(key, marker_options, marker_values) {
       var obj = this;
       var default_marker_options = {};
@@ -2153,7 +3639,16 @@ TODO:
       return marker;
     }
 
-
+    /**
+     * creates a google.maps.Rectangle object and adds it to the internal Google Map
+     * @function
+     * @name addRectangle
+     * @memberOf DwCMapView
+     * @param {Object} bounds google.maps.LatLngBounds object as defined in the Google Maps V3 API
+     * @param {Object} [rectangle_options] a google.maps.RectangleOptions object as defined in the Google Maps V3 API
+     * @param {Object} [rectangle_values] after the google.maps.Rectangle object is created, this will be passed to the rectangle's setValues() function as defined in the Google Maps V3 API
+     * @returns {Object} A google.maps.Rectangle object
+     */
     this.addRectangle = function(bounds, rectangle_options, rectangle_values) {
       var obj = this;
       var default_rectangle_options = {}
@@ -2219,8 +3714,12 @@ TODO:
     }
 
 
-    // makes sure that all markers in the "markers" array
-    // have been made visible on the map
+    /**
+     * set all map markers to visible (everything in the "markers" array)
+     * @function
+     * @name drawMarkers
+     * @memberOf DwCMapView
+     */
     this.drawMarkers = function() {
       var obj = this;
       $.each(this.markers, function(key, marker) {
@@ -2229,8 +3728,12 @@ TODO:
     }
 
 
-    // makes sure that all overlays in the "rectangles" array
-    // have been made visible on the map
+    /**
+     * set all rectangles (grid segments) to visible (everything in the "rectangles" array
+     * @function
+     * @name drawRectangles
+     * @memberOf DwCMapView
+     */
     this.drawRectangles = function() {
       var obj = this;
       $.each(this.rectangles, function(index, rectangle) {
@@ -2239,16 +3742,24 @@ TODO:
     }
 
 
-    // makes sure that all overlays in the "markers"
-    // and "rectangles" array have been made visible on the map
+    /**
+     * sets all overlays (markers and rectangles) to visible
+     * @function
+     * @name drawOverlays
+     * @memberOf DwCMapView
+     */
     this.drawOverlays = function() {
       this.displayMarkers();
       this.displayRectangles();
     }
 
 
-    // hide all markers on the map and clear out all of
-    // the markers from the markers array
+    /**
+     * remove all markers from the map (everything in the "markers" array)
+     * @function
+     * @name deleteMarkers
+     * @memberOf DwCMapView
+     */
     this.deleteMarkers = function() {
       var obj = this;
       $.each(this.markers, function(key, marker) {
@@ -2258,9 +3769,12 @@ TODO:
     }
 
 
-    // hide all rectangles on the map and clear out all of
-    // the rectangles from the rectangles array
-    this.deleteRectangles = function() {
+    /**
+     * remove all rectangles from the map (everything in the "rectangles" array)
+     * @function
+     * @name deleteRectangles
+     * @memberOf DwCMapView
+     */    this.deleteRectangles = function() {
       var obj = this;
       $.each(this.rectangles, function(index, rectangle) {
         rectangle.setMap(null)
@@ -2269,16 +3783,25 @@ TODO:
     }
 
 
-    // hide all (types of) overlays on the map and clear out all of
-    // the overlays from the markers and rectangles array
+    /**
+     * remove all overlays from the map (all markers and rectangles)
+     * @function
+     * @name deleteOverlays
+     * @memberOf DwCMapView
+     */
     this.deleteOverlays = function() {
       this.deleteMarkers();
       this.deleteRectangles();
     }
 
 
-    // takes a google maps bounds box then queries/displays
-    // only the markers located within that box/bounds
+    /**
+     * query/display markers within a certain area of them ap
+     * @function
+     * @name loadBounds
+     * @memberOf DwCMapView
+     * @param {Object} args an associative array of options: TODO
+     */
     this.loadBounds = function(args) {
       var obj = this;
 
@@ -2312,9 +3835,14 @@ TODO:
     }
 
 
-    // takes the results of a DwCSearch and places a
-    // the resulting records' corresponding markers on
-    // the map
+    /**
+     * takes the results of a DwCSearch and places the corresponding markers on the map
+     * @function
+     * @name loadMarkers
+     * @memberOf DwCMapView
+     * @param {Object} data the JSON records data found in the DwCSearch.data object
+     * @param {LatLng} center a google.maps.LatLng object as outlined in the Google Maps V3 api
+     */
     this.loadMarkers = function(data, center) {
       var obj = this;
 
@@ -2375,7 +3903,14 @@ TODO:
     }
 
 
-    // generic search function (non-dynamic, non-tiling)
+    /**
+     * the generic search function for this plugin (non-dynamic, non-tiling)
+     * @function
+     * @name Search
+     * @memberOf DwCMapView
+     * @param {DwCSearch} search the JSON records data found in the DwCSearch.data object
+     * @param {DwCSearchOptions} search_options an associative array of options for the search
+     */
     this.Search = function(search, search_options) {
       // standard args that make this a top-level search
       var args = {
@@ -2403,14 +3938,24 @@ TODO:
     }
 
 
-    // requeries/redraws/reloads all map overlays
+    /**
+     * requeries/reloads/redraws all map overlays
+     * @function
+     * @name reload
+     * @memberOf DwCMapView
+     */
     this.reload = function() {
       this.restoreState(true);
     }
 
 
-    // sets display to the type specified:
-    // true = markers, false = grid, null = toggle
+    /**
+     * set/toggle between markers/grid view
+     * @function
+     * @name toggleDisplayType
+     * @memberOf DwCMapView
+     * @param {Boolean|null} [toggle_type=null] true = show markers, false = show grid, null = toggle
+     */
     this.toggleDisplayType = function(toggle_type) {
       // if no type was specified, toggle
       if (typeof(toggle_type) == 'undefined') {
@@ -2444,6 +3989,7 @@ TODO:
    * DwCMapView - Namespace Declaration
    ***************************************************************************/
 
+  /** @ignore */
   $.fn.DwCMapView = function(options) {
     return this.each(function() {
       (new $.DwCMapView($(this), options));
@@ -2455,51 +4001,359 @@ TODO:
    * DwCMapView - Default Options
    ***************************************************************************/
 
+  /**
+   * @class an associative array of options for the DwCMapView object
+   * @name DwCMapViewOptions
+   * @memberOf DwCMapView
+   */
   $.DwCMapView.defaultOptions = {
     recordsTable: null,
+    /**
+     * the associated (internal) DwCSearch object that will
+     * be used to query records from the Darwin Core database
+     * @field
+     * @name search
+     * @memberOf DwCMapView.DwCMapViewOptions
+     * @type DwCViews.DwCSearch
+     * @default null
+     */
     search: null,
+    /**
+     * the name of the field containing the unique identifier for each record
+     * in the Darwin Core Database
+     * @field
+     * @name idField
+     * @memberOf DwCMapView.DwCMapViewOptions
+     * @type String
+     * @default 'id'
+     */
     idField: 'id',
+    /**
+     * this option determines which field contains the latitude
+     * information for each record in the Darwin Core Database
+     * @field
+     * @name latitudeField
+     * @memberOf DwCMapView.DwCMapViewOptions
+     * @type String
+     * @default 'lat'
+     */
     latitudeField: 'lat',
+    /**
+     * this option determines which field contains the longitude
+     * information for each record in the Darwin Core Database
+     * @field
+     * @name longitudeField
+     * @memberOf DwCMapView.DwCMapViewOptions
+     * @type String
+     * @default 'lng'
+     */
     longitudeField: 'lng',
+    /**
+     * the name of the field that will act as the
+     * title (the popup text) for each marker on the DwCMapView
+     * @field
+     * @name titleField
+     * @memberOf DwCMapView.DwCMapViewOptions
+     * @type String
+     * @default 'sciName_s'
+     */
     titleField: 'sciName_s',
+    /**
+     * the maximum number of records to be returned by each query
+     * (translating into the maximum number of markers to be displayed)
+     * If a given query results in more than the maximum number of records,
+     * a random sample of those records will be returned
+     * @field
+     * @name maxRecords
+     * @memberOf DwCMapView.DwCMapViewOptions
+     * @type Integer
+     * @default 1000
+     */
     maxRecords: 1000,
+    /**
+     * an associative array of every google.maps.Marker (API V3)
+     * objects to be displayed on the map
+     * @field
+     * @name tileResults
+     * @memberOf DwCMapView.DwCMapViewOptions
+     * @type Object
+     * @default false
+     */
     tileResults: false,
+    /**
+     * an associative array of every google.maps.Marker (API V3)
+     * objects to be displayed on the map
+     * @field
+     * @name markers
+     * @memberOf DwCMapView.DwCMapViewOptions
+     * @type Object
+     * @default {}
+     */
     markers: {},
+    /**
+     * an array of every google.maps.Rectangle (API V3)
+     * objects to be displayed on the map (i.e. in grid view)
+     * @field
+     * @name rectangles
+     * @memberOf DwCMapView.DwCMapViewOptions
+     * @type Object
+     * @ default []
+     */
     rectangles: [],
+    /**
+     * the current zoom level of the google map
+     * @field
+     * @name zoom
+     * @memberOf DwCMapView.DwCMapViewOptions
+     * @type Integer
+     * @default 0
+     */
     zoom: 0,
+    /**
+     * a google.maps.LatLng (API V3) object representing the coordinates
+     * of the center of the map's current display bounds
+     * @field
+     * @name center
+     * @memberOf DwCMapView.DwCMapViewOptions
+     * @type Object
+     * @default new google.maps.LatLng(0,0)
+     */
     center: new google.maps.LatLng(0,0),
     autoCenter: true,
+    /**
+     * the type of google map to use (i.e. HYBRID, ROADMAP, SATELLITE, or TERRAIN)
+     * @field
+     * @name mapTypeId
+     * @memberOf DwCMapView.DwCMapViewOptions
+     * @type google.maps.MapTypeId
+     * @default google.maps.MapTypeId.HYBRID
+     */
     mapTypeId: google.maps.MapTypeId.HYBRID,
+    /**
+     * if this option is set to true, a grid will be painted
+     * over the map color-coated to show which areas  have a
+     * more dense concentration of records associated with that area
+     * @field
+     * @name showGrid
+     * @memberOf DwCMapView.DwCMapViewOptions
+     * @type Boolean
+     * @default false
+     */
     showGrid: false,
+    /**
+     * if set to true, individual records will be queried and displayed
+     * as markers on the map (according to their latitude/longitude information)
+     * @field
+     * @name showMarkers
+     * @memberOf DwCMapView.DwCMapViewOptions
+     * @type Boolean
+     * @default true
+     */
     showMarkers: true,
+    /**
+     * when the 'tileResults' field is set to true, this determines
+     * how many equally-sized rows (latitudinal groupings) will be used
+     * @field
+     * @name tileRows
+     * @memberOf DwCMapView.DwCMapViewOptions
+     * @type Integer
+     * @default 10
+     */
     tileRows: 10,
+    /**
+     * when the 'tileResults' field is set to true, this determines
+     * how many equally-sized columns (longitudinal groupings) will be used
+     * @field
+     * @name tileCols
+     * @memberOf DwCMapView.DwCMapViewOptions
+     * @type Integer
+     * @default 10
+     */
     tileCols: 10,
+    /**
+     * when the 'tileResults' field is set to true, this determines
+     * the maximum number of records/markers that will be displayed
+     * within each tile (if the total count is higher than the maximum
+     * number, a random subset will be used)
+     * @field
+     * @name maxMarkersPerTile
+     * @memberOf DwCMapView.DwCMapViewOptions
+     * @type Integer
+     * @default 10
+     */
     maxMarkersPerTile: 10,
+    /**
+     * the opacity of each rectangle's colored overlay
+     * (value from 0 - 1)
+     * @field
+     * @name rectangleOpacity
+     * @memberOf DwCMapView.DwCMapViewOptions
+     * @type Decimal
+     * @default 0.25
+     */
     rectangleOpacity: 0.25,
+    /**
+     * the width of each rectangle's border
+     * @field
+     * @name rectangleStrokeWeight
+     * @memberOf DwCMapView.DwCMapViewOptions
+     * @type Integer
+     * @default 1
+     */
     rectangleStrokeWeight: 1,
+    /**
+     * the color of each rectangle's border
+     * @field
+     * @name rectangleStrokeColor
+     * @memberOf DwCMapView.DwCMapViewOptions
+     * @type String
+     * @default '#000000'
+     */
     rectangleStrokeColor: '#000000',
+    /**
+     * the opacity of each rectangle's border lines
+     * (value between 0 - 1)
+     * @field
+     * @name rectangleStrokeOpacity
+     * @memberOf DwCMapView.DwCMapViewOptions
+     * @type Decimal
+     * @default 0.5
+     */
     rectangleStrokeOpacity: 0.5,
+    /**
+     * an optional callback function that is automatically invoked after
+     * the DwCMapView object first initializes itself
+     * @function
+     * @name onInit
+     * @memberOf DwCMapView.DwCMapViewOptions
+     * @type Function
+     * @param {DwCViews} this the object will pass a reference to itself as the only argument
+     * @default null
+     */
     onInit: null,
+    /**
+     * an optional callback function that is automatically invoked
+     * when a marker is clicked
+     * @function
+     * @name onMarkerClick
+     * @memberOf DwCMapView.DwCMapViewOptions
+     * @type Function
+     * @param {DwCViews} this the object will pass a reference to itself
+     * @param {DwCViews} marker the google.maps.Marker object that was clicked
+     * @default null
+     */
     onMarkerClick: null,
     //onRectangleClick: function(map_view, rectangle) {
     //  alert("Total Records in Tile: " + rectangle.get('recordCount'));
     //},
+    /**
+     * an optional callback function that is automatically invoked
+     * when a rectangle (or grid cell) is clicked
+     * @function
+     * @name onRectangleClick
+     * @memberOf DwCMapView.DwCMapViewOptions
+     * @type Function
+     * @param {DwCViews} this the object will pass a reference to itself
+     * @param {DwCViews} marker the google.maps.Rectangle object that was clicked
+     * @default null
+     */
     onRectangleClick: null,
+    /**
+     * an optional callback function that is automatically invoked
+     * when a rectangle (or grid cell) is double-clicked
+     * @function
+     * @name onRectangleDoubleClick
+     * @memberOf DwCMapView.DwCMapViewOptions
+     * @type Function
+     * @param {DwCViews} this the object will pass a reference to itself
+     * @param {DwCViews} marker the google.maps.Rectangle object that was double-clicked
+     * @default by default, a double click will fit the map to the bounds of the double-clicked rectangle
+     */
     onRectangleDoubleClick: function(obj, rectangle) {
       obj.map.fitBounds(rectangle.getBounds());
     },
     onDynamicLoad: null,
+    /**
+     * an optional callback function that is automatically invoked after
+     * the DwCMapView Search() function is called
+     * @function
+     * @name onSearch
+     * @memberOf DwCMapView.DwCMapViewOptions
+     * @type Function
+     * @param {DwCViews} this the object will pass a reference to itself as the only argument
+     * @default null
+     */
     onSearch: null,
+    /**
+     * an optional callback function that is automatically invoked when the
+     * the DwCMapView Show() function is called
+     * @function
+     * @name onShow
+     * @memberOf DwCMapView.DwCMapViewOptions
+     * @type Function
+     * @param {DwCViews} this the object will pass a reference to itself as the only argument
+     * @default null
+     */
     onShow: null,
+    /**
+     * an optional callback function that is automatically invoked when the
+     * the DwCMapView Hide() function is called
+     * @function
+     * @name onHide
+     * @memberOf DwCMapView.DwCMapViewOptions
+     * @type Function
+     * @param {DwCViews} this the object will pass a reference to itself as the only argument
+     * @default null
+     */
     onHide: null
   };
 
 
-  // some default options for manipulating tile data
+  /**
+   * @class an associative array of options to be used when tiling
+   * @name DwCMapViewTileOptions
+   * @memberOf DwCMapView
+   */
   $.DwCMapView.defaultTileOptions = {
+    /**
+     * if set to true, the northern rectangle border (longitude) will be included
+     * when querying for records located within the rectangle's bounds
+     * @field
+     * @name northInclusive
+     * @memberOf DwCMapView.DwCMapViewTileOptions
+     * @type Boolean
+     * @default true
+     */
     northInclusive: true,
+    /**
+     * if set to true, the southern rectangle border (longitude) will be included
+     * when querying for records located within the rectangle's bounds
+     * @field
+     * @name southInclusive
+     * @memberOf DwCMapView.DwCMapViewTileOptions
+     * @type Boolean
+     * @default true
+     */
     southInclusive: true,
+    /**
+     * if set to true, the eastern rectangle border (latitude) will be included
+     * when querying for records located within the rectangle's bounds
+     * @field
+     * @name eastInclusive
+     * @memberOf DwCMapView.DwCMapViewTileOptions
+     * @type Boolean
+     * @default true
+     */
     eastInclusive: true,
+    /**
+     * if set to true, the western rectangle border (latitude) will be included
+     * when querying for records located within the rectangle's bounds
+     * @field
+     * @name westInclusive
+     * @memberOf DwCMapView.DwCMapViewTileOptions
+     * @type Boolean
+     * @default true
+     */
     westInclusive: true
   }
 
@@ -2511,6 +4365,7 @@ TODO:
    * DwCMapView - Begin Private Functions
    ***************************************************************************/
 
+  /** @private */
   function mapView_Initialize(obj) {
     var map;
     var map_options = {}
@@ -2568,6 +4423,7 @@ TODO:
   }
 
 
+  /** @private */
   function mapView_Search(args) {
     var obj = args['mapView'];
     var ajax_handler;
@@ -2639,6 +4495,7 @@ TODO:
 
   // helper function, used as a callback function in the
   // map view's doSearch() public function
+  /** @private */
   function mapView_DoSearch(data, args) {
     var obj = args['mapView'];
     var count = data.numFound;
@@ -2697,6 +4554,7 @@ TODO:
   }
 
 
+  /** @private */
   function mapView_CalculateBoundsAddendum(obj, bounds, tile_options) {
     var filter_addendum = "";
     var northeast = bounds.getNorthEast(); // LatLng top-right corner
@@ -2780,6 +4638,7 @@ TODO:
   }
 
   // draw markers and the rectangle for teh given bounds
+  /** @private */
   function mapView_DrawTile(args) {
     // required args
     var obj = args['mapView'];
@@ -2805,6 +4664,7 @@ TODO:
 
 
   // queries, loads markers and draws a rectangle over the given bounds
+  /** @private */
   function mapView_LoadTile(args) {
     // required options
     var obj = args['mapView'];
@@ -2830,6 +4690,7 @@ TODO:
   }
 
 
+  /** @private */
   function mapView_LoadRectangles(args) {
     var obj = args['mapView'];
 
@@ -2907,6 +4768,7 @@ TODO:
   // takes a rectangle then returns a number representing the
   // perecentage that the are of the rectangle represents of
   // the total map.  All calculations are performed in degrees.
+  /** @private */
   function mapView_CalculateRectanglePercent(obj, bounds) {
     var total = 360 * 180; // size of the entire map (in degrees)
     var span = bounds.toSpan();
@@ -2920,6 +4782,7 @@ TODO:
   // takes a plethora of information about the rectange, the map,
   // and its current state and returns an RGB value in hex format
   // representing the relative number of markers in the rectangle
+  /** @private */
   function mapView_CalculateRectangleWeight(obj, args) {
     var rectangle_bounds = args['rectangleBounds']; // rectangle coordinates
     var rectangle_value = args['value']; // # of markers in the rectangle
@@ -2949,6 +4812,7 @@ TODO:
 
   // takes a whole bunch of variables and magically returns an HTML/CSS-compatible
   // color value
+  /** @private */
   function mapView_CalculateRectangleColor(obj, args) {
     var red, green, blue;
 
@@ -2981,6 +4845,13 @@ TODO:
    * Darwin Core Database
    ***************************************************************************/
 
+  /**
+   * @class a detailed view of a single field found within the Darwin Core database
+   * @name DwCFieldView
+   * @constructor
+   * @param {DwCFieldViewOptions} options an associative array of options
+   * @returns {DwCFieldView} a new instance of the DwCFieldView object
+   */
   $.DwCFieldView = function(element, options) {
 
     this.options = {};
@@ -2988,38 +4859,210 @@ TODO:
     // store this object instance in the main element's .data() attribute
     element.data('DwCFieldView', this);
 
+    /** @ignore */
     this.init = function(element, option) {
 
       // merge default options and options passed into the function
       this.options = $.extend({}, $.DwCFieldView.defaultOptions, options);
 
       // create a handle on the DOM element
+      /**
+       * the actual html container that contains the DwCFieldView
+       * (generally a &lt;div&gt; tag)
+       * @field
+       * @name element
+       * @memberOf DwCFieldView
+       * @type Object
+       */
       this.element = element;
 
       // standard options
+      /**
+       * the associated (internal) DwCSearch object that will
+       * be used to query records from the Darwin Core database
+       * @field
+       * @name search
+       * @memberOf DwCFieldView
+       * @type DwCViews.DwCSearch
+       */
       this.search = this.options.search;
+      /**
+       * a handle to the parent DwCViews object
+       * (if this DwCFieldView is contained within one)
+       * @field
+       * @name dwcviews
+       * @memberOf DwCFieldView
+       * @type DwCViews
+       */
       this.dwcviews = this.options.dwcviews;
+      /**
+       * the address of the darwin core gateway
+       * @field
+       * @name gatewayAddress
+       * @memberOf DwCFieldView
+       * @type String
+       */
       this.gatewayAddress = this.options.gatewayAddress;
+      /**
+       * the absolute base path of the darwin core gateway service
+       * @field
+       * @name baseDir
+       * @memberOf DwCFieldView
+       * @type String
+       */
       this.baseDir = this.options.baseDir;
+      /**
+       * a lucene-compatible query
+       * @field
+       * @name filter
+       * @memberOf DwCFieldView
+       * @type String
+       */
       this.filter = this.options.filter;
+      /**
+       * an associative array of labels for each field's common attributes
+       * @field
+       * @name attributes
+       * @memberOf DwCFieldView
+       * @type Object
+       */
       this.attributes = this.options.attributes;
+      /**
+       * the maximum number of distinct values to be displayed
+       * in the wordcloud or histogram views
+       * (if the total number is greater than the maximum value, each value
+       * will be chosen at random)
+       * @field
+       * @name maxFieldValues
+       * @memberOf DwCFieldView
+       * @type Integer
+       */
       this.maxFieldValues = this.options.maxFieldValues;
+      /**
+       * the font-size that will be considered the upper bound
+       * for a value (i.e. the most frequent value)
+       * @field
+       * @name wordCloudMaxFontSize
+       * @memberOf DwCFieldView
+       * @type Decimal
+       */
       this.wordCloudMaxFontSize = this.options.wordCloudMaxFontSize;
+      /**
+       * the font-size that will be considered the lower bound
+       * for a value (i.e. the least frequent value)
+       * @field
+       * @name wordCloudMinFontSize
+       * @memberOf DwCFieldView
+       * @type Decimal
+       */
       this.wordCloudMinFontSize = this.options.wordCloudMinFontSize;
+      /**
+       * the type of unit to which wordCloudMaxFontSize and wordCloudMinFontSize
+       * will refer (i.e. 'pt', 'px', 'em', etc.)
+       * @field
+       * @name wordCloudFontUnit
+       * @memberOf DwCFieldView
+       * @type String
+       */
       this.wordCloudFontUnit = this.options.wordCloudFontUnit;
+      /**
+       * the base google charts url (without any options)
+       * @field
+       * @name googleChartsUrl
+       * @memberOf DwCFieldView
+       * @type String
+       */
       this.googleChartsUrl = this.options.googleChartsUrl;
+      /**
+       * the title at the top of the histogram
+       * @field
+       * @name histogramTitle
+       * @memberOf DwCFieldView
+       * @type String
+       */
       this.histogramTitle = this.options.histogramTitle;
+      /**
+       * all numeric fields' 'value' displays are represented by a
+       * bar graph style histogram.  this field represents the number
+       * of different bars/bins (groupings) in which the values will
+       * be presented   
+       * @field
+       * @name histogramNBins
+       * @memberOf DwCFieldView
+       * @type Integer
+       */
       this.histogramNBins = this.options.histogramNBins;
+      /**
+       * the actual size of the histogram to be generated
+       * in the format &lt;width&gt;x&lt;height&gt;
+       * (i.e. '400x400')
+       * @field
+       * @name histogramSize
+       * @memberOf DwCFieldView
+       * @type String
+       */
       this.histogramSize = this.options.histogramSize;
+      /**
+       * the color of each bar in the histogram 
+       * @field
+       * @name histogramBarColor
+       * @memberOf DwCFieldView
+       * @type String
+       */
       this.histogramBarColor = this.options.histogramBarColor;
 
       // event hooks
+      /**
+       * an optional callback function that is automatically invoked after
+       * the DwCFieldView object first initializes itself
+       * @function
+       * @name onInit
+       * @memberOf DwCFieldView
+       * @type Function
+       * @param {DwCFieldView} this the object will pass a reference to itself as the only argument
+       */
       this.onInit = this.options.onInit;
+      /**
+       * an optional callback function that is automatically invoked when the
+       * the DwCFieldView Show() function is called
+       * @function
+       * @name onShow
+       * @memberOf DwCFieldView
+       * @type Function
+       * @param {DwCFieldView} this the object will pass a reference to itself as the only argument
+       */
       this.onShow = this.options.onShow;
+      /**
+       * an optional callback function that is automatically invoked when the
+       * the DwCFieldView Hide() function is called
+       * @function
+       * @name onHide
+       * @memberOf DwCFieldView
+       * @type Function
+       * @param {DwCFieldView} this the object will pass a reference to itself as the only argument
+       */
       this.onHide = this.options.onHide;
+      /**
+       * this callback function is automatically invoked when a user clicks
+       * on one of the values in the wordcloud
+       * @function
+       * @name fieldValueOnClick
+       * @memberOf DwCFieldView
+       * @type Function
+       * @param {DwCViews} this the object will pass a reference to itself
+       * @param {Object} element the actual html (DOM) element that was clicked
+       */
       this.fieldValueOnClick = this.options.fieldValueOnClick;
 
       // other internal state variables
+      /**
+       * the name of the Darwin Core Field represented by
+       * this DwCField object
+       * @field
+       * @name field
+       * @memberOf DwCFieldView
+       * @type String
+       */
       this.field = null;
       this.fieldTable = null;
 
@@ -3047,7 +5090,12 @@ TODO:
    * DwCFieldView - Begin Public Functions
    ***************************************************************************/
 
-    // hide the table (if not already hidden)
+    /**
+     * display/unhide the DwCFieldView (if it is currently hidden)
+     * @function
+     * @name show
+     * @memberOf DwCFieldView
+     */
     this.show = function() {
       var element = this.element;
       element.slideDown('slow', function() {
@@ -3056,7 +5104,12 @@ TODO:
     }
 
 
-    // show the table (if it is hidden)
+    /**
+     * hide the DwCFieldView (if it is currently visible)
+     * @function
+     * @name hide
+     * @memberOf DwCFieldView
+     */
     this.hide = function() {
       var element = this.element;
       element.slideUp('slow', function() {
@@ -3065,7 +5118,16 @@ TODO:
     }
 
 
-    // set/change the which field the field view will display
+    /**
+     * set/change which field this DwCFieldView will display 
+     * @function
+     * @name setField
+     * @memberOf DwCFieldView
+     * @param {String} field_name the name of the field in the Darwin Core Database to be displayed
+     * @param {Boolean} [load=true] true if the field data should be retrieved immediately
+     * @param {Boolean} [show=true] true if the DwCFieldView be displayed once field information has been loaded? (if not already visible)
+     */
+    // set/change which field the field view will display
     this.setField = function(field_name, load, show) {
       // we don't need to do anything if it's already set to this field
       if (this.fieldName != field_name) {
@@ -3085,6 +5147,15 @@ TODO:
     }
 
 
+    /**
+     * Add a filter to limit the number of values displayed
+     * @function
+     * @name setFilter
+     * @memberOf DwCFieldView
+     * @param {String} filter a lucene-compatible conditional statement that will be appended to the values query
+     * @param {Boolean} [load=true] true if the filter should be applied immediately
+     * @param {Boolean} [show=true] true if the DwCFieldView be displayed once the filter has been applied? (if not already visible)
+     */
     // set/change the which field the field view will display
     this.setFilter = function(filter, load, show) {
       // we don't need to do anything if it's already set to this field
@@ -3105,6 +5176,14 @@ TODO:
     }
 
 
+    /**
+     * update the information on the currently displayed field (based on current options and filter)
+     * @function
+     * @name refresh
+     * @memberOf DwCFieldView
+     * @param {Boolean} [show=false] true if the DwCFieldView should be displayed (unhidden) once refreshed
+     * @param {Boolean} [cached=false] true if the DwCFieldView should attempt to cached data (if present) instead of fetching new data from the Darwin Core database
+     */
     this.refresh = function(show, cached) {
       // default argument values
       show = typeof(show) != 'undefined'? show : false;
@@ -3122,7 +5201,12 @@ TODO:
     }
 
 
-    // fill-out all of the information in the field view
+    /**
+     * retrieve information about the currently selected field and use it to populate the DwCFieldView
+     * @function
+     * @name populateFieldView
+     * @memberOf DwCFieldView
+     */
     this.populateFieldView = function() {
       var obj = this;
 
@@ -3143,7 +5227,7 @@ TODO:
           fieldView_PopulateFieldValueRepresentation(obj);
         });
       }
-      
+      // use the fieldData already present
       else { 
         fieldView_PopulateAttributes(obj);
         fieldView_PopulateFieldValueRepresentation(obj);
@@ -3164,6 +5248,7 @@ TODO:
    * DwCFieldView - Namespace Declaration
    ***************************************************************************/
 
+  /** @ignore */
   $.fn.DwCFieldView = function(options) {
     return this.each(function() {
       (new $.DwCFieldView($(this), options));
@@ -3175,12 +5260,74 @@ TODO:
    * DwCFieldView - Default Options
    ***************************************************************************/
 
+  /**
+   * @class some options for the DwCFieldView
+   * @name DwCFieldViewOptions
+   * @memberOf DwCFieldView
+   */
   $.DwCFieldView.defaultOptions = {
+    /**
+     * the associated (internal) DwCSearch object that will
+     * be used to query records from the Darwin Core database
+     * @field
+     * @name search
+     * @memberOf DwCFieldView.DwCFieldViewOptions
+     * @type DwCViews.DwCSearch
+     * @default null
+     */
     search: null,
+    /**
+     * a handle to the parent DwCViews object
+     * (if this DwCFieldView is contained within one)
+     * @field
+     * @name dwcviews
+     * @memberOf DwCFieldView.DwCFieldViewOptions
+     * @type DwCViews
+     * @default null
+     */
     dwcviews: null,
+    /**
+     * the address of the darwin core gateway
+     * @field
+     * @name gatewayAddress
+     * @memberOf DwCFieldView.DwCFieldViewOptions
+     * @type String
+     * @default ""
+     */
     gatewayAddress: "",
+    /**
+     * the absolute base path of the darwin core gateway service
+     * @field
+     * @name baseDir
+     * @memberOf DwCFieldView.DwCFieldViewOptions
+     * @type String
+     * @default "/gateway/"
+     */
     baseDir: "/gateway/",
+    /**
+     * a lucene-compatible query
+     * @field
+     * @name filter
+     * @memberOf DwCFieldView.DwCFieldViewOptions
+     * @type String
+     * @default null
+     */
     filter: null,
+    /**
+     * an associative array of labels for each field's common attributes
+     * @field
+     * @name attributes
+     * @memberOf DwCFieldView.DwCFieldViewOptions
+     * @type Object
+     * @default
+     * {
+     *   label: "Server Label",
+     *   type: "Data Type",
+     *   distinct: "Dinstinct Values",
+     *   minvalue: "Minimum Value",
+     *   maxvalue: "Maximum Value"
+     * }
+     */
     attributes: {
       label: "Server Label",
       type: "Data Type",
@@ -3188,20 +5335,161 @@ TODO:
       minvalue: "Minimum Value",
       maxvalue: "Maximum Value"
     },
+    /**
+     * the maximum number of distinct values to be displayed
+     * in the wordcloud or histogram views
+     * (if the total number is greater than the maximum value, each value
+     * will be chosen at random)
+     * @field
+     * @name maxFieldValues
+     * @memberOf DwCFieldView.DwCFieldViewOptions
+     * @type Integer
+     * @default 50
+     */
     maxFieldValues: 50,
+    /**
+     * the font-size that will be considered the upper bound
+     * for a value (i.e. the most frequent value)
+     * @field
+     * @name wordCloudMaxFontSize
+     * @memberOf DwCFieldView.DwCFieldViewOptions
+     * @type Decimal
+     * @default 3
+     */
     wordCloudMaxFontSize: 3,
+    /**
+     * the font-size that will be considered the lower bound
+     * for a value (i.e. the least frequent value)
+     * @field
+     * @name wordCloudMinFontSize
+     * @memberOf DwCFieldView.DwCFieldViewOptions
+     * @type Decimal
+     * @default 0.80
+     */
     wordCloudMinFontSize: 0.80,
+    /**
+     * the type of unit to which wordCloudMaxFontSize and wordCloudMinFontSize
+     * will refer (i.e. 'pt', 'px', 'em', etc.)
+     * @field
+     * @name wordCloudFontUnit
+     * @memberOf DwCFieldView.DwCFieldViewOptions
+     * @type String
+     * @default 'em'
+     */
     wordCloudFontUnit: 'em',
+    /**
+     * the base google charts url (without any options)
+     * @field
+     * @name googleChartsUrl
+     * @memberOf DwCFieldView.DwCFieldViewOptions
+     * @type String
+     * @default 'http://chart.apis.google.com/chart'
+     */
     googleChartsUrl: 'http://chart.apis.google.com/chart',
+    /**
+     * the title at the top of the histogram
+     * @field
+     * @name histogramTitle
+     * @memberOf DwCFieldView.DwCFieldViewOptions
+     * @type String
+     * @default null
+     */
     histogramTitle: null, //'Field Value Distributions',
+    /**
+     * all numeric fields' 'value' displays are represented by a
+     * bar graph style histogram.  this field represents the number
+     * of different bars/bins (groupings) in which the values will
+     * be presented   
+     * @field
+     * @name histogramNBins
+     * @memberOf DwCFieldView.DwCFieldViewOptions
+     * @type Integer
+     * @default 10
+     */
     histogramNBins: 10,
+    /**
+     * the actual size of the histogram to be generated
+     * in the format &lt;width&gt;x&lt;height&gt;
+     * @field
+     * @name histogramSize
+     * @memberOf DwCFieldView.DwCFieldViewOptions
+     * @type String
+     * @default '775x375'
+     */
     histogramSize: '775x375',
+    /**
+     * the color of each bar in the histogram 
+     * @field
+     * @name histogramBarColor
+     * @memberOf DwCFieldView.DwCFieldViewOptions
+     * @type String
+     * @default '3366cc'
+     */
     histogramBarColor: '3366cc',
+    /**
+     * will the DwCFieldView object query and load its data upon initialization
+     * @field
+     * @name loadOnInit
+     * @memberOf DwCFieldView.DwCFieldViewOptions
+     * @type Boolean
+     * @default true
+     */
     loadOnInit: true,
+    /**
+     * will the DwCFieldView object be hidden when it is first initialized
+     * @field
+     * @name hideOnInit
+     * @memberOf DwCFieldView.DwCFieldViewOptions
+     * @type Boolean
+     * @default true
+     */
     hideOnInit: false,
+    /**
+     * an optional callback function that is automatically invoked after
+     * the DwCFieldView object first initializes itself
+     * @function
+     * @name onInit
+     * @memberOf DwCFieldView.DwCFieldViewOptions
+     * @type Function
+     * @param {DwCFieldView} this the object will pass a reference to itself as the only argument
+     * @default null
+     */
     onInit: null,
+    /**
+     * an optional callback function that is automatically invoked when the
+     * the DwCFieldView Show() function is called
+     * @function
+     * @name onShow
+     * @memberOf DwCFieldView.DwCFieldViewOptions
+     * @type Function
+     * @param {DwCFieldView} this the object will pass a reference to itself as the only argument
+     * @default null
+     */
     onShow: null,
+    /**
+     * an optional callback function that is automatically invoked when the
+     * the DwCFieldView Hide() function is called
+     * @function
+     * @name onHide
+     * @memberOf DwCFieldView.DwCFieldViewOptions
+     * @type Function
+     * @param {DwCFieldView} this the object will pass a reference to itself as the only argument
+     * @default null
+     */
     onHide: null,
+    /**
+     * this callback function is automatically invoked when a user clicks
+     * on one of the values in the wordcloud
+     * @function
+     * @name fieldValueOnClick
+     * @memberOf DwCFieldView.DwCFieldViewOptions
+     * @type Function
+     * @param {DwCViews} this the object will pass a reference to itself as the only argument
+     * @param {Object} element the actual html (DOM) element that was clicked
+     * @default by default, clicking on a value will set a global filter on all plugins within the DwCieldsView
+     *   (if it exists) so that the only records returned will be those where this field has
+     *   the specified value (the value that was clicked)
+     */
     fieldValueOnClick: function(field_view, element) {
       var filter, original_filter, value_filter;
       if (field_view.dwcviews) {
@@ -3224,6 +5512,7 @@ TODO:
    * DwCFieldView - Begin Private Functions
    ***************************************************************************/
 
+  /** @private **/
   function fieldView_init(obj) {
     var table, thead, tr, th, div;
 
@@ -3263,6 +5552,7 @@ TODO:
 
 
   // if the DwCField object does not exist, build it
+  /** @private **/
   function fieldView_BuildField(obj) {
     var field_options = {};
     // if a field already exists, don't do anything
@@ -3280,12 +5570,14 @@ TODO:
   }
 
 
+  /** @private **/
   function fieldView_EmptyView(obj) {
     var tbody = obj.fieldTable.find('tbody:last');
     tbody.empty();
   }
 
 
+  /** @private **/
   function fieldView_PopulateAttributes(obj) {
     var data = obj.field.fieldData[obj.fieldName];
     var thead, tbody, tr, td;
@@ -3354,6 +5646,7 @@ TODO:
   }
 
 
+  /** @private **/
   function fieldView_BuildWordCloud(obj) {
     var wcloud_title;
     var wcloud_cell;
@@ -3401,6 +5694,7 @@ TODO:
   }
 
 
+  /** @private **/
   function fieldView_BuildHistogram(obj) {
     var histogram_title;
     var histogram_container;
@@ -3476,6 +5770,7 @@ TODO:
   }
 
 
+  /** @private **/
   function fieldView_CalculateFontSize(obj, value) {
     // calculate the most and least frequent terms
     var min, max;
@@ -3505,6 +5800,7 @@ TODO:
   // first determines if the field is a number or date, then
   // creates either a wordcloud or histogram to represent
   // the current values for the given field
+  /** @private **/
   function fieldView_PopulateFieldValueRepresentation(obj) {
     // generate a word cloud for non-numeric/date values
     if ($.inArray(obj.field.fieldData[obj.fieldName]['type'], solrQuantifiableFieldTypes) == -1) {
@@ -3539,6 +5835,13 @@ TODO:
    * Darwin Core database.
    ***************************************************************************/
 
+  /**
+   * @class a plugin that displays all of the public fields in the Darwin Core Database
+   * @name DwCFieldsView
+   * @constructor
+   * @param {DwCFieldsViewOptions} options an associative array of options for teh DwCFieldsView object
+   * @returns {Object} a new instance of the DwCFieldsView object
+   */
   $.DwCFieldsView = function(element, options) {
 
     this.options = {};
@@ -3546,6 +5849,7 @@ TODO:
     // store this object instance in the main element's .data() attribute
     element.data('DwCFieldsView', this);
 
+    /** @ignore */
     this.init = function(element, option) {
       var obj = this;
 
@@ -3553,23 +5857,113 @@ TODO:
       this.options = $.extend({}, $.DwCFieldsView.defaultOptions, options);
 
       // create a handle on the DOM element
+      /**
+       * the actual html container that contains the DwCFieldsView
+       * (generally a &lt;div&gt; tag)
+       * @field
+       * @name element
+       * @memberOf DwCFieldsView
+       * @type Object
+       */
       this.element = element;
       
       // set options as state variables
       this.fields = this.options.fields;
+      /**
+       * the address of the darwin core gateway
+       * @field
+       * @name gatewayAddress
+       * @memberOf DwCFieldsView
+       * @type String
+       */
       this.gatewayAddress = this.options.gatewayAddress;
+      /**
+       * the absolute base path of the darwin core gateway service
+       * @field
+       * @name baseDir
+       * @memberOf DwCFieldsView
+       * @type String
+       */
       this.baseDir = this.options.baseDir;
+      /**
+       * an associative array of labels to be used when displaying
+       * information about each field
+       * @field
+       * @name attributes
+       * @memberOf DwCFieldsView.DwCFieldsViewOptions
+       * @type Object
+       */
       this.attributes = this.options.attributes;
+      /**
+       * the associated DwCFieldView object (if not null, this will
+       * be used to display detailed information about a single field)
+       * @field
+       * @name fieldView
+       * @memberOf DwCFieldsView
+       * @type DwCFieldView
+       */
       this.fieldView = this.options.fieldView;
+      /**
+       * the associated DwCRecordsTable object (if not null, changes made
+       * in the DwCFieldsView can be used to affect columns/fields shown
+       * in this DwCRecordsTable)
+       * @field
+       * @name recordsTable
+       * @memberOf DwCFieldsView
+       * @type DwCRecordsTable
+       */
       this.recordsTable = this.options.recordsTable;
 
       // event hooks
+      /**
+       * this is a callback function that will be automatically invoked when the
+       * DwCFieldsView is first initialized
+       * @function
+       * @name onInit
+       * @memberOf DwCFieldsView
+       * @param {DwCRecordsTable} this the DwCRecordsTable will pass itself to this function
+       */
       this.onInit = this.options.onInit;
+      /**
+       * an optional callback function that is automatically invoked when the
+       * the DwCFieldsView show() function is called
+       * @function
+       * @name onShow
+       * @memberOf DwCFieldsView
+       * @type Function
+       * @param {DwCViews} this the object will pass a reference to itself as the only argument
+       */
       this.onShow = this.options.onShow;
+      /**
+       * an optional callback function that is automatically invoked when the
+       * the DwCFieldsView hide() function is called
+       * @function
+       * @name onHide
+       * @memberOf DwCFieldsView
+       * @type Function
+       * @param {DwCViews} this the object will pass a reference to itself as the only argument
+       */
       this.onHide = this.options.onHide;
+      /**
+       * this is a callback function that will be automatically invoked when a row
+       * (representing a field) on the DwCFieldsView is clicked
+       * @function
+       * @name onRowClick
+       * @memberOf DwCFieldsView
+       * @param {DwCRecordsTable} this the DwCRecordsTable will pass itself to this function
+       * @param {Object} row the actual &lt;tr&gt; html element of the row that was clicked
+       */
       this.onRowClick = this.options.onRowClick;
 
       // some internal state variables
+      /**
+       * the actual &lt;table&gt; html element used in the DwCFieldsView
+       * @function
+       * @name fieldsTable
+       * @memberOf DwCFieldsView
+       * @param {DwCRecordsTable} this the DwCRecordsTable will pass itself to this function
+       * @param {Object} row the actual &lt;tr&gt; html element of the row that was clicked
+       */
       this.fieldsTable = null;
 
       // if there is an associated recordsTable, make sure
@@ -3604,11 +5998,24 @@ TODO:
    * DwCFieldsView - Begin Public Functions
    ***************************************************************************/
 
+    /**
+     * determine whether the DwCFieldsView is currently hidden or visible
+     * @function
+     * @name isHidden
+     * @memberOf DwCFieldsView
+     * @returns {Boolean} true if the DwCFieldsView is currently visible, false otherwise
+     */
     this.isHidden = function() {
       return !this.element.is(":visible");
     }
 
-    // hide this plugin
+
+    /**
+     * hides the DwCFieldsView plugin (if visible)
+     * @function
+     * @name hide
+     * @memberOf DwCFieldsView
+     */
     this.hide = function() {
       var obj = this;
       // don't do anything if the map view is already hidden
@@ -3622,7 +6029,12 @@ TODO:
     }
 
 
-    // show this plugin (only if it is hidden)
+    /**
+     * display the DwCFieldsView plugin (if it is hidden)
+     * @function
+     * @name show
+     * @memberOf DwCFieldsView
+     */
     this.show = function() {
       var obj = this;
 
@@ -3637,6 +6049,14 @@ TODO:
       }
     }
 
+
+    /**
+     * populate the DwCFieldsView with the given field data
+     * @function
+     * @name populateFields
+     * @memberOf DwCFieldsView
+     * @param {Object} data the JSON fields data used to populate the DwCFieldsView
+     */
     this.populateFields = function(data) {
       var obj = this;
       var tbody = obj.fieldsTable.find('tbody:first');
@@ -3766,9 +6186,16 @@ TODO:
       row.find('td').addClass('DwCFieldsView_LastRow');
     }
 
-    // analyzes the associated records table and checks all checkboxes
-    // who's associated fields are currently displayed in the records table.
-    // Likewise, it unchecks all other checkboxes.
+
+    /**
+     * analyzes the associated records table and checks all checkboxes
+     * who's associated fields are currently displayed in the records table
+     * (likewise, it unchecks all other checkboxes)
+     *
+     * @function
+     * @name syncWithRecordsTable
+     * @memberOf DwCFieldsView
+     */
     this.syncWithRecordsTable = function() {
       var obj = this;
       var checkboxes;
@@ -3803,6 +6230,7 @@ TODO:
    * DwCFieldsView - Namespace Declaration
    ***************************************************************************/
 
+  /** @ignore */
   $.fn.DwCFieldsView = function(options) {
     return this.each(function() {
       (new $.DwCFieldsView($(this), options));
@@ -3814,8 +6242,14 @@ TODO:
    * DwCFieldsView - Default Options
    ***************************************************************************/
 
+  /**
+   * @class
+   * @name DwCFieldsViewOptions
+   * @memberOf DwCFieldsView
+   */
   $.DwCFieldsView.defaultOptions = {
     fields: null,
+
     attributes: {
       '__field_name__': 'Name',
       'label': 'Label',
@@ -3824,13 +6258,88 @@ TODO:
       'stored': 'Stored',
       'multivalued': 'Multi-Values'
     },
-    getewayAddress: '',
+    /**
+     * the address of the darwin core gateway
+     * @field
+     * @name gatewayAddress
+     * @memberOf DwCFieldsView.DwCFieldsViewOptions
+     * @type String
+     * @default ''
+     */
+    gatewayAddress: '',
+    /**
+     * the absolute base path of the darwin core gateway service
+     * @field
+     * @name baseDir
+     * @memberOf DwCFieldsView.DwCFieldsViewOptions
+     * @type String
+     * @default '/gateway/'
+     */
     baseDir: '/gateway/',
+    /**
+     * the associated DwCFieldView object (if not null, this will
+     * be used to display detailed information about a single field)
+     * @field
+     * @name fieldView
+     * @memberOf DwCFieldsView.DwCFieldsViewOptions
+     * @type DwCFieldView
+     * @default null
+     */
     fieldView: null,
+    /**
+     * the associated DwCRecordsTable object (if not null, changes made
+     * in the DwCFieldsView can be used to affect columns/fields shown
+     * in this DwCRecordsTable)
+     * @field
+     * @name recordsTable
+     * @memberOf DwCFieldsView.DwCFieldsViewOptions
+     * @type DwCRecordsTable
+     * @default null
+     */
     recordsTable: null,
+    /**
+     * this is a callback function that will be automatically invoked when the
+     * DwCFieldsView is first initialized
+     * @function
+     * @name onInit
+     * @memberOf DwCFieldsView.DwCFieldsViewOptions
+     * @param {DwCRecordsTable} this the DwCRecordsTable will pass itself to this function
+     * @default null
+     */
     onInit: null,
+    /**
+     * an optional callback function that is automatically invoked when the
+     * the DwCFieldsView show() function is called
+     * @function
+     * @name onShow
+     * @memberOf DwCFieldsView.DwCFieldsViewOptions
+     * @type Function
+     * @param {DwCViews} this the object will pass a reference to itself as the only argument
+     * @default null
+     */
     onShow: null,
+    /**
+     * an optional callback function that is automatically invoked when the
+     * the DwCFieldsView hide() function is called
+     * @function
+     * @name onHide
+     * @memberOf DwCFieldsView.DwCFieldsViewOptions
+     * @type Function
+     * @param {DwCViews} this the object will pass a reference to itself as the only argument
+     * @default null
+     */
     onHide: null,
+    /**
+     * this is a callback function that will be automatically invoked when a row
+     * (representing a field) on the DwCFieldsView is clicked
+     * @function
+     * @name onRowClick
+     * @memberOf DwCFieldsView.DwCFieldsViewOptions
+     * @param {DwCRecordsTable} this the DwCRecordsTable will pass itself to this function
+     * @param {Object} row the actual &lt;tr&gt; html element of the row that was clicked
+     * @default by default, when a row is clicked, that field's details will be displayed
+     *   in the associated DwCFieldView object (if one exists)
+     */
     onRowClick: function (obj, row) {
       obj.fieldView.setField(row.attr('dwc_fieldname'), true, true);
     }
@@ -3841,6 +6350,7 @@ TODO:
    * DwCFieldsView - Begin Private Functions
    ***************************************************************************/
 
+  /** @private */
   function fieldsView_init(obj) {
     var table;
     var table_header;
@@ -3871,6 +6381,7 @@ TODO:
   }
 
 
+  /** @private */
   function fieldsView_BuildAttributesHeader(obj) {
     var titles_row = obj.fieldsTable.find('tr.DwCFieldsView_AttributeTitlesRow:first');
 
@@ -3891,6 +6402,7 @@ TODO:
   }
 
 
+  /** @private */
   function fieldsView_BindFieldToggle(obj, button) {
     button.click(function () {
       
@@ -3908,19 +6420,62 @@ TODO:
    * (i.e. recordsTable, mapView, fieldsView)
    ***************************************************************************/
 
+  /**
+   * @class a simple control panel that allows the user to switch between different views embedded within the DwCViews widget
+   * @name DwCViewPicker
+   * @constructor
+   * @param {Object} options an associative array of options for the DwCViewPicker
+   * @returns {DwCViewPicker} a new instance of the DwCViewPicker object
+   */
   $.DwCViewPicker = function(element, options) {
 
     this.options = {};
 
     element.data('DwCViewPicker', this);
 
+    /** @ignore */
     this.init = function(element, options) {
 
       this.options = $.extend({}, $.DwCViewPicker.defaultOptions, options);
+
+      /**
+       * the actual html container that contains the DwCFieldView
+       * (generally a &lt;div&gt; tag)
+       * @field
+       * @name element
+       * @memberOf DwCViewPicker
+       * @type Object
+       */
       this.element = element;
 
+      /**
+       * the name of the button representing the view that will
+       * be displayed by default (upon initialization)
+       * @field
+       * @name defaultView
+       * @memberOf DwCViewPicker
+       * @type String
+       */
       this.defaultView = this.options.defaultView
+      /**
+       * an associative array of all buttons and the DwC Plugins
+       * that each one represents
+       * @field
+       * @name buttons
+       * @memberOf DwCViewPicker
+       * @type Object
+       */
       this.buttons = this.options.buttons;
+      /**
+       * this callback function is automatically invoked when a user clicks
+       * on one of the view buttons
+       * @function
+       * @name onButtonClick
+       * @memberOf DwCViewPicker
+       * @type Function
+       * @param {DwCViews} this the object will pass a reference to itself
+       * @param {Object} the DwC Plugin that the button represents
+       */
       this.onButtonClick = this.options.onButtonClick;
 
       setupPicker(this);
@@ -3932,8 +6487,14 @@ TODO:
    * DwCViewPicker - Begin Public Functions
    ***************************************************************************/
 
-    // add a button, or update the button settings if it
-    // already exists
+
+    /**
+     * add a new button, or update an existing button
+     * @name setButton
+     * @memberOf DwCViewPicker
+     * @param {String} button_name the name of the button that you wish to add
+     * @param {Object} button_info an associative array of options for this button
+     */
     this.setButton = function(button_name, button_info) {
       if (this.buttons.hasOwnProperty(button_name)) {
         var button = this.element.find('.DwCViewPicker_' + button_name);
@@ -3951,16 +6512,21 @@ TODO:
       }
     }
 
-    // show the given view (identified by its button name)
-    // and hide all other views
-    this.showView = function(view_name) {
+
+    /**
+     * show/display the given view and hide the others
+     * @name showView
+     * @memberOf DwCViewPicker
+     * @param {String} button_name the name of the button associated with the view that you wish to be displayed
+     */
+    this.showView = function(button_name) {
       // loop through each button hiding/showing the appropriate view(s)
       $.each(this.buttons, function(name, button_info) {
         var view = button_info['view'];
 
         if (view) {
           // show the specified view
-          if (name == view_name) {
+          if (name == button_name) {
             // if the view has a native "show()" command, use it
             if (typeof(view.show) == 'function') { view.show(); }
             // if not, call a generic JQuery "show()" on it
@@ -3991,6 +6557,7 @@ TODO:
    * DwCViewPicker - Namespace Declaration
    ***************************************************************************/
 
+  /** @ignore */
   $.fn.DwCViewPicker = function(options) {
     return this.each(function() {
       (new $.DwCViewPicker($(this), options));
@@ -4002,9 +6569,42 @@ TODO:
    * DwCViewPicker - Default Options
    ***************************************************************************/
 
+  /**
+   * @class
+   * @name DwCViewPickerOptions
+   * @memberOf DwCViewPicker
+   */
   $.DwCViewPicker.defaultOptions = {
+    /**
+     * the name of the button in the DwCViewPicker that represents the
+     * "default" DwC plugin (the plugin that will be displayed upon initialization) 
+     * @field
+     * @name defaultView
+     * @memberOf DwCViewPicker.DwCViewPickerOptions
+     * @type String
+     * @default "RecordsTableButton"
+     */
     defaultView: "RecordsTableButton",
+    /**
+     * a callback function that is automatically invoked when any of
+     * the DwCViewPicker's buttons are clicked
+     * @function
+     * @name onButtonClick
+     * @memberOf DwCViewPicker.DwCViewPickerOptions
+     * @default null
+     * @param {Object} this the DwCViewPicker object that is invoking this function
+     * @param {Object} view the DwC Plugin corresponding to the button that was pressed
+     */
     onButtonClick: null,
+    /**
+     * An associative array of buttons and button information
+     * this array should be in the following format:
+     * { "&lt;ButtonName&gt;": { "view" : &lt;DwCPlugin&gt; }, etc. }
+     * @field
+     * @name buttons
+     * @memberOf DwCViewPicker.DwCViewPickerOptions
+     * @type Object
+     */
     buttons: {
       "RecordsTableButton": {
         "view": null 
@@ -4023,6 +6623,7 @@ TODO:
    * DwCViewPicker - Begin Private Functions
    ***************************************************************************/
 
+  /** @private */
   function setupPicker(obj) {
 
     // style-ize the container
@@ -4064,6 +6665,7 @@ TODO:
   }
 
 
+  /** @private */
   function bindButtonClick(obj, button, button_name, button_info) {
     button.click(function() {
       // show the corresponding view and hide the other views
@@ -4096,21 +6698,53 @@ TODO:
    * The Right-Click menu used to control various DwC objects and functions
    ***************************************************************************/
 
+  /**
+   * @class a right-click style context menu
+   * @name DwCContextMenu
+   * @constructor
+   * @param {DwCContextMenuOptions} options an associative array of options for the DwCContextMenu
+   * @returns {DwCContextMenu} a new instance of the DwCContextMenu object
+   */
   $.DwCContextMenu = function(element, options) {
 
     this.options = {};
 
     element.data('DwCContextMenu', this);
 
+    /** @ignore */
     this.init = function(element, options) {
 
       this.options = $.extend({}, $.DwCContextMenu.defaultOptions, options);
+
+      /**
+       * the actual html element containing the DwCContextMenu plugin (usually a &lt;div&gt;)
+       * @field
+       * @name element
+       * @memberOf DwCContextMenu
+       * @type Object
+       */
       this.element = element;
 
+      /**
+       * an associative array of menu groups, menu items, and callback functions
+       * { '&lt;Group Name&gt;' {'label': '&lt;Group Name&gt;', 'displayLabel': &lt;true|false&gt;,
+       * 'items': {'&lt;Field Name&rt;': {'label': '&lt;Field Label&rt;', 'display': &lt;true|false&rt;,
+       * 'on': &lt;true|false&rt;, 'click': &lt;Callback Function&rt;} }, etc. }
+       * @field
+       * @name groups
+       * @memberOf DwCContextMenu
+       * @type Object
+       */
       this.groups = options.groups
-
-      // we need an overlay to handle off-menu clicks while
-      // the menu is active
+      /**
+       * a transparent, page-sized container used as a clickable overlay for
+       * recording when a click is made outside of the DwCContextMenu
+       * (usually a &lt;div&gt; html element)
+       * @field
+       * @name overlay
+       * @memberOf DwCContextMenu
+       * @type Object
+       */
       this.overlay = options.overlay;
       if (this.overlay == null)
       {
@@ -4127,6 +6761,13 @@ TODO:
    * DwCContextMenu - Begin Public Functions
    ***************************************************************************/
 
+    /**
+     * display/unhide the DwCContextMenu at the point specified in the given mouse-click event
+     * @function
+     * @name show
+     * @memberOf DwCContextMenu
+     * @param {Event} e a mouse click event
+     */
     this.show = function(e) {
       var element = this.element;
       var overflow;
@@ -4140,6 +6781,12 @@ TODO:
     }
 
 
+    /**
+     * hide the DwCContextMenu
+     * @function
+     * @name hide
+     * @memberOf DwCContextMenu
+     */
     this.hide = function() {
       element = this.element;
       // use a fade-out animation
@@ -4150,6 +6797,14 @@ TODO:
     }
 
 
+    /**
+     * adds a special style to the menu item (changing its display to the "on" status)
+     * @function
+     * @name itemOn
+     * @memberOf DwCContextMenu
+     * @param {String} group the group name in which the item exists
+     * @param {String} item the item name to be toggled to "on"
+     */
     this.itemOn = function(group, item) {
       var item = this.groups[group]['items'][item];
       item['element'].addClass('DwCContextMenu_ItemOn');
@@ -4157,6 +6812,14 @@ TODO:
     }
 
 
+    /**
+     * removes a special style from the menu item (changing its display to the "off" status)
+     * @function
+     * @name itemOff
+     * @memberOf DwCContextMenu
+     * @param {String} group the group name in which the item exists
+     * @param {String} item the item name to be toggled to "off"
+     */
     this.itemOff = function(group, item) {
       var item = this.groups[group]['items'][item];
       item['element'].removeClass('DwCContextMenu_ItemOn');
@@ -4164,8 +6827,13 @@ TODO:
     }
 
 
-    // loop through all items and make sure that they are properly tagged
-    // (or not tagged) with the appropriate CSS class
+    /**
+     * properly tags (or untags) each item's CSS classes based on whether they are tagged "on" or "off"
+     * (this function should used when an external call changes any menu status)
+     * @function
+     * @name refreshItemsOnOff
+     * @memberOf DwCContextMenu
+     */
     this.refreshItemsOnOff = function() {
       var obj = this; // handle on object intance for callback functions
       $.each(obj.groups, function(group_name, group) {
@@ -4193,6 +6861,7 @@ TODO:
    * DwCContextMenu - Namespace Declaration
    ***************************************************************************/
 
+  /** @ignore */
   $.fn.DwCContextMenu = function(options) {
     return this.each(function() {
       (new $.DwCContextMenu($(this), options));
@@ -4204,8 +6873,29 @@ TODO:
    * DwCContextMenu - Default Options
    ***************************************************************************/
 
+  /**
+   * @class an associative array of options for the DwCContextMenu
+   * @name DwCContextMenuOptions
+   * @memberOf DwCContextMenu
+   */
   $.DwCContextMenu.defaultOptions = {
+    /**
+     * an associative array of menu groups, menu items, and callback functions
+     * @field
+     * @name groups
+     * @memberOf DwCContextMenu.DwCContextMenuOptions
+     * @default {}
+     */
     groups: {},
+    /**
+     * a transparent, page-sized container used as a clickable overlay for
+     * recording when a click is made outside of the DwCContextMenu
+     * (usually a &lt;div&gt; html element)
+     * @field
+     * @name overlay
+     * @memberOf DwCContextMenu.DwCContextMenuOptions
+     * @default null (a new container will automatically be made if nothing is specified)
+     */
     overlay: null
   };
 
@@ -4214,12 +6904,14 @@ TODO:
    * DwCContextMenu - Begin Private Functions
    ***************************************************************************/
 
+  /** @private */
   function prepareMenu(obj) {
     obj.element.addClass('DwCContextMenu');
     obj.element.css('display', 'none');
   }
 
 
+  /** @private */
   function bindMenuEvents(obj) {
     obj.element.bind('contextmenu', function(e) {
       obj.hide();
@@ -4238,6 +6930,7 @@ TODO:
   }
 
 
+  /** @private */
   function buildMenu(obj) {
     $.each(obj.groups, function(group_id, group) {
       var group_element = $('<ul class="DwCContextMenu_Group"></ul>');
@@ -4303,6 +6996,8 @@ TODO:
 
   }
 
+
+  /** @private */
   function createMenuOverlay() {
     var overlay = $('<div class="DwCMenuOverlay"></div>');
     // set the dimensions of the overlay to cover the entire page
@@ -4331,12 +7026,18 @@ TODO:
    * Some General Functions
    ***************************************************************************/
 
-  // returns "true" if the value is numeric, false if not
+  /**
+   * returns true if the given value is numeric, false otherwise
+   * @function
+   * @name isNumeric
+   * @param {String} n any value
+   */
   function isNumeric(n) {
     return !isNaN(parseFloat(n)) && isFinite(n);
   }
 
 
+  /** @private */
   // calculate a percentage based on various values
   function calculateHistogramPercentage(args) {
     // required options
@@ -4348,6 +7049,7 @@ TODO:
   }
 
 
+  /** @private */
   function histogramPercentageToRange(args) {
     var floor = args['floor']; // minimum allowable value
     var ceiling = args['ceiling']; // maximum allowable value
@@ -4356,7 +7058,12 @@ TODO:
   }
 
 
-  // takes a string and escapes any SOLR special characters
+  /**
+   * prepares a string for SOLR by escaping any special (reserved) characters
+   * @function
+   * @name solrEscapeValue
+   * @param {String} str a string to be prepared for SOLR
+   */
   function solrEscapeValue(str) {
     var esc_str = '';
 
@@ -4373,7 +7080,12 @@ TODO:
     return esc_str;
   }
 
-  // all special characters that need to be escaped in a SOLR value
+  /**
+   * an associative array containing all reserved lucene characters/strings
+   * @field
+   * @name solrSpecialCharacters
+   * @type Array
+   */
   // note, we only use the keys, the values don't actually matter
   var solrSpecialCharacters = {
     '-': '-',
@@ -4396,9 +7108,25 @@ TODO:
     '\\': '\\'
   };
 
+
+  /**
+   * the string that will be appended to escaped lucene characters
+   * @field
+   * @name solrEscapeCharacter
+   * @type String
+   * @default '\\'
+   */
   // the character used to escape special characters in SOLR values
   var solrEscapeCharacter = '\\';
 
+  /**
+   * An array of strings listing all quantifiable lucene types (i.e. numbers and dates)
+   * @field
+   * @name solrQuantifiableFieldTypes
+   * @type Array
+   * @default new Array( 'integer', 'sint', 'sdouble', 'long', 'double',
+   *   'float', 'sfloat', 'slong', 'date' )
+   */
   // list of all quantifiable solr field types (includes numbers and dates)
   var solrQuantifiableFieldTypes = new Array( 
     'integer',
