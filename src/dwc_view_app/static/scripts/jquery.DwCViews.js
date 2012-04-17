@@ -726,13 +726,7 @@
      * @param {Object} fields an array of field names
      */
     this.prepareFieldString = function(fields) {
-      var fields_string = ""
-      $.each(fields, function(i, field) {
-        if (fields_string != "") {
-          fields_string += ",";
-        }
-        fields_string += field;
-      });
+      return fields.join();
     }
 
 
