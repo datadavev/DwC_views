@@ -25,7 +25,7 @@ class SOLRGateway:
   __identifier = 'solr'
 
 
-  def __init__(self, host=None, basedir=None, encoder=__json_encoder, identifier='solr'):
+  def __init__(self, host=None, basedir=None, encoder=__json_encoder, identifier=__identifier):
     '''SOLRGateway constructor.
     
     :param host: SOLR Server Address (i.e. "serrano.speciesanalyst.net")
@@ -42,8 +42,7 @@ class SOLRGateway:
     #  raise Error('You Must Specify a Host/Dir')
 
     self.__connection = SolrConnection(host=host, solrBase=basedir)
-    if encoder:
-      self.__json_encoder = encoder
+    self.__json_encoder = encoder
     self.__identifier = identifier
     
 
